@@ -35,3 +35,10 @@ def common_constellation(mod, M):
     constellation = constellation / np.sqrt(np.mean(np.abs(constellation) ** 2))
     return torch.tensor(constellation)
 
+def rcos_filt(alpha, len, fs, sym_time):
+    t_vec = (np.arange(len)-(len-1)/2)/fs
+    if alpha == 0:
+        return torch.tensor(np.sinc(t_vec/sym_time))
+    rcos =  np.where(np.abs(t_vec) == sym_time/(2*alpha), np.pi/4*np.sinc(1/(2*alpha)), \
+                     np.sinc(t_vec/sym_time)*(np.cos(np.pi*alpha*t_vec/sym_time))/(1-(2*alpha*t_vec/sym_time)**2))
+    return torch.tensor(rcos)
