@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 import torch
 from torch.nn.functional import conv1d
@@ -42,3 +43,11 @@ def rcos_filt(alpha, len, fs, sym_time):
     rcos =  np.where(np.abs(t_vec) == sym_time/(2*alpha), np.pi/4*np.sinc(1/(2*alpha)), \
                      np.sinc(t_vec/sym_time)*(np.cos(np.pi*alpha*t_vec/sym_time))/(1-(2*alpha*t_vec/sym_time)**2))
     return torch.tensor(rcos)
+
+def chrom_disp_filt(L_link, R_sym, beta2, N_taps, N_sim,): # expect odd N_taps, SI 
+    deltaf = (N_sim*R_sym)/N_taps
+    f = (np.arange(N_taps) - np.floor(N_taps/2))*deltaf
+    H_cd = np.exp(1j*((2*np.pi*f)**2*beta2*L_link/2))
+    h_cd = np.fft.fftshift(np.fft.ifft(np.fft.ifftshift(H_cd)))
+    return torch.tensor(h_cd)
+
