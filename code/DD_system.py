@@ -1,5 +1,4 @@
 import torch
-from torch.nn.functional import conv1d
 
 import help_functions as hlp
 
@@ -18,8 +17,9 @@ class DD_system():
             self.tx_filt = None
         self.rx_filt = rx_filt.view(1,1,-1)
 
-    def simulate_transmission(self, batch_size, N_sym, Ptx):
-        u = torch.sqrt(Ptx)*self.constellation[torch.randint(torch.numel(self.constellation),[batch_size, 1, N_sym])]
+    def simulate_transmission(self, batch_size, N_sym, Ptx_dB):
+        Ptx_lin = 10**(Ptx_dB/10)
+        u = torch.sqrt(Ptx_lin)*self.constellation[torch.randint(torch.numel(self.constellation),[batch_size, 1, N_sym])]
         if self.diff_encoder is not None:
             x = self.diff_encoder.encode(u)
         else:
@@ -74,4 +74,5 @@ if __name__ == "__main__":
                               alpha=0.2, 
                               L_link=10e3, R_sym=20e9, beta2=-2e26)
     u, x, y = system.simulate_transmission(3,20,torch.tensor([10000]))
+
     
