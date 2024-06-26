@@ -4,8 +4,21 @@ import help_functions as hlp
 
 
 class DD_system():
+    '''
+    Class implementing the system with Direct Detection
+    '''
 
     def __init__(self, N_os, N_sim, constellation, diff_encoder, pulse_shape, ch_imp_resp, rx_filt):
+        '''
+        Arguments:
+            N_os:           oversampling factor of the physical system (integer)
+            N_sim:          oversampling factor used during the simulation to avoid aliasing (integer multiple of N_os)
+            constellation:  constellation alphabet containing the possible symbols (1D tensor)
+            diff_encoder:   instance of a Differential_encoder or None
+            pulse_shape:    taps pulse shaping FIR filter (1D tensor with odd length)
+            ch_imp_resp:   taps of the channel impulse response (1D tensor with length equal to pulse_shape)
+            rx_filt:        taps of the receiver FIR filter (1D tensor with odd length)
+        '''
         self.N_os = N_os
         self.N_sim = N_sim  
         self.d = N_sim//N_os 
@@ -18,6 +31,18 @@ class DD_system():
         self.rx_filt = rx_filt.view(1,1,-1)
 
     def simulate_transmission(self, batch_size, N_sym, SNR_dB):
+        ''' Simulates the transmission of B batches and N symbols per batch with the given SNR 
+
+        Arguments:
+        batch_size:     number of batches to simulate (integer)
+        N_sym:          number of symbols per batch (integer)
+        SNR_dB:         SNR in dB used for the simulation (float)
+        
+        Returns:
+        u:  the symbols before the differential encoding (Tensor of size (batch_size, 1, N_sym))
+        x:  the symbols after the differential encoding (Tensor of size (batch_size, 1, N_sym)) if diff_encoder is None u = x  
+        y:  the samples after the transmission (Tensor of size (batch_size, 1, N_sym*N_os))
+        '''
         SNR_lin = 10**(SNR_dB/10)
         u = self.constellation[torch.randint(torch.numel(self.constellation),[batch_size, 1, N_sym])]
         if self.diff_encoder is not None:
@@ -27,12 +52,33 @@ class DD_system():
         x_up = torch.kron(x,torch.eye(self.N_sim)[-1])
         z = torch.square(torch.abs(hlp.convolve(x_up, self.tx_filt)))
         var_n = torch.tensor([self.N_sim/SNR_lin])
-        print(10*torch.log10(torch.mean(torch.abs(z)**2)/torch.mean(torch.abs(torch.sqrt(var_n)*torch.randn_like(z))**2)))
         y = z + torch.sqrt(var_n)*torch.randn_like(z)
         y = hlp.convolve(y, self.rx_filt)
         return u, x, y[:,:,self.d-1::self.d]
         
 def set_up_DD_system(N_os, N_sim, **kwargs):
+    '''Returns a DD_system with the given configuration for common constellations,
+    pulse shapes, channel impulse response and receiver filter
+
+    Arguments:
+    N_os:   oversampling factor of the physical system (integer)
+    N_sim:  oversampling factor used during the simulation to avoid aliasing (integer multiple of N_os)
+
+    kwargs:
+    mod_format:     constellation type (string: PAM, ASK, SQAM, QAM or DDQAM)
+    M:              constellation order (integer) give together with mod_format
+    constellation:  constellation to be used (1D tensor)
+    alpha:          roll off factor of a raised cosine filter used as a pulse shape (float in [0,1])
+    N_taps:         number of taps used for the pulse shape filter and channel impulse response filter (integer)
+    pulse_shape:    particular pulse shape to be used (1D tensor)
+    L_link:         length of the SMF in meters (float) use if the channel presents CD
+    R_sym:          symbol rate in Hz (float) use if the channel presents CD
+    beta2:          beta2 parameter of the SMF in s^2/m (float)
+    ch_imp_resp:    particular chanel impulse response to be used (1D tensor)
+    diff_encoder:   differential encoder to be used (Differential_encoder instance)
+    rx_filt:        particular receiver filter to be used (1D tensor), 
+                    if not specified uses a ideal LP filter simulate sampler BW, and if N_sim=N_os is a delta function
+    '''
     if {"mod_format", "M"} <= kwargs.keys():
         constellation = hlp.common_constellation(kwargs["mod_format"], kwargs["M"])
     elif "constellation" in kwargs.keys():
