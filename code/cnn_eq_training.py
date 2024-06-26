@@ -22,9 +22,8 @@ dd_system = DD_system.set_up_DD_system(N_os= 2, N_sim=2,
 num_ch = [1,3,3,2]
 ker_lens = [11,9,9]
 strides = [1,1,2]
-paddings = [(ker_len-1)//2 for ker_len in ker_lens]
 activ_func = torch.nn.ELU()
-cnn_equalizer = CNN_equalizer.CNN_equalizer(num_ch, ker_lens, strides, paddings, activ_func)
+cnn_equalizer = CNN_equalizer.CNN_equalizer(num_ch, ker_lens, strides, activ_func)
 
 optimizer = optim.Adam(cnn_equalizer.parameters(), eps=1e-07)
 
@@ -32,7 +31,7 @@ optimizer = optim.Adam(cnn_equalizer.parameters(), eps=1e-07)
 batches_per_epoch = 1
 batch_size_per_epoch = [1,]
 N_sym = 2000
-SNR_dB_steps = torch.tensor([*range(20,21)])
+SNR_dB_steps = [*range(20,21)]
 loss_func = MSELoss(reduction='mean')
 
 
