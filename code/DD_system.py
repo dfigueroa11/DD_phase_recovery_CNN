@@ -17,16 +17,17 @@ class DD_system():
             self.tx_filt = None
         self.rx_filt = rx_filt.view(1,1,-1)
 
-    def simulate_transmission(self, batch_size, N_sym, Ptx_dB):
-        Ptx_lin = 10**(Ptx_dB/10)
-        u = torch.sqrt(Ptx_lin)*self.constellation[torch.randint(torch.numel(self.constellation),[batch_size, 1, N_sym])]
+    def simulate_transmission(self, batch_size, N_sym, SNR_dB):
+        SNR_lin = 10**(SNR_dB/10)
+        u = self.constellation[torch.randint(torch.numel(self.constellation),[batch_size, 1, N_sym])]
         if self.diff_encoder is not None:
             x = self.diff_encoder.encode(u)
         else:
             x = u
         x_up = torch.kron(x,torch.eye(self.N_sim)[-1])
         z = torch.square(torch.abs(hlp.convolve(x_up, self.tx_filt)))
-        var_n = torch.tensor([self.N_sim/2])
+        var_n = torch.tensor([self.N_sim/SNR_lin])
+        print(10*torch.log10(torch.mean(torch.abs(z)**2)/torch.mean(torch.abs(torch.sqrt(var_n)*torch.randn_like(z))**2)))
         y = z + torch.sqrt(var_n)*torch.randn_like(z)
         y = hlp.convolve(y, self.rx_filt)
         return u, x, y[:,:,self.d-1::self.d]
