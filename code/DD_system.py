@@ -29,10 +29,10 @@ class DD_system():
         self.constellation = constellation
         self.diff_encoder = diff_encoder
         if pulse_shape is not None and ch_imp_resp is not None:
-            self.tx_filt = hlp.cascade_filters(pulse_shape, ch_imp_resp).view(1,1,-1)
+            self.tx_filt = hlp.norm_filt(N_sim, hlp.cascade_filters(pulse_shape, ch_imp_resp)).view(1,1,-1)
         else:
             self.tx_filt = None
-        self.rx_filt = rx_filt.view(1,1,-1)
+        self.rx_filt = hlp.norm_filt(N_sim, rx_filt).view(1,1,-1)
 
     def simulate_transmission(self, batch_size, N_sym, SNR_dB):
         ''' Simulates the transmission of B batches and N symbols per batch with the given SNR 

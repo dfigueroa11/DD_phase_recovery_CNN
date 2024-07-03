@@ -115,6 +115,16 @@ def chrom_disp_filt(L_link, R_sym, beta2, N_taps, N_sim, dtype=torch.cfloat):
     h_cd = np.fft.fftshift(np.fft.ifft(np.fft.ifftshift(H_cd)))
     return torch.tensor(h_cd, dtype=dtype)
 
+def norm_filt(N_sim, filt):
+    ''' Returns the filter normalized to unitary energy, taking into acount the simulation oversampling
+
+    Arguments:
+    N_sim:      oversampling factor used during the simulation to avoid aliasing (integer multiple of N_os)
+    filt:       filter to normalize (1D tensor)       
+    '''
+    filt = filt * torch.sqrt(N_sim / torch.sum(torch.abs(filt) ** 2))
+    return filt
+
 def set_up_DD_system(N_os, N_sim, **kwargs):
     '''Returns a DD_system with the given configuration for common constellations,
     pulse shapes, channel impulse response and receiver filter
