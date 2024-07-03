@@ -125,6 +125,27 @@ def norm_filt(N_sim, filt):
     filt = filt * torch.sqrt(N_sim / torch.sum(torch.abs(filt) ** 2))
     return filt
 
+def filt_windowing(filt, energy_criteria=99):  
+    ''' Returns the smallest window of the original filter centered around zero, than contains x% of the energy
+    of the original filter, and the number of taps of such filter
+
+    Returns: filt_w, N_taps
+
+    Arguments:
+    filt:               filter to window (1D tensor)
+    energy_criteria:    float between 0 and 100, interpreted as a percentage (default 99%)
+    '''  
+    filt_len = torch.numel(filt)
+    samp_idx = torch.arange(-(filt_len-1)/2,(filt_len-1)/2+1)
+    energy_tot = torch.sum(torch.abs(filt)**2)
+    energy_w = 0
+    n = -1
+    while energy_w < energy_tot*energy_criteria/100:
+        n = n+1
+        filt_w = filt[abs(samp_idx) <= n]
+        energy_w = torch.sum(torch.abs(filt_w)**2)
+    return filt_w, 2*n+1
+
 def set_up_DD_system(N_os, N_sim, **kwargs):
     '''Returns a DD_system with the given configuration for common constellations,
     pulse shapes, channel impulse response and receiver filter
