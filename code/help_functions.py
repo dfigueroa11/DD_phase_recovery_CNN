@@ -30,13 +30,14 @@ def convolve(signal, filter):
     filter = torch.resolve_conj(torch.flip(filter, [-1]))
     return conv1d(signal, filter, padding='same')
 
-def common_constellation(mod, M, dtype=torch.cfloat):
+def common_constellation(mod, M, dtype=torch.cfloat, sqrt_flag=False):
     '''Returns the constellation specified (1D tensor of size M)
 
     Arguments:
-    mod:    String with the modulation format, valid options are 'PAM', 'ASK', 'SQAM', 'QAM' or 'DDQAM'
-    M:      order of the modulation
-    dtype:  data type (optional, default torch.cfloat)
+    mod:        String with the modulation format, valid options are 'PAM', 'ASK', 'SQAM', 'QAM' or 'DDQAM'
+    M:          order of the modulation
+    dtype:      data type (optional, default torch.cfloat)
+    sqrt_flag:  whether to apply the sqrt to all symbol's magnitudes or not (boolean default: False)
     '''
     if mod == "PAM":
         constellation = np.linspace(0, 1, num=M, endpoint=True)
@@ -57,6 +58,8 @@ def common_constellation(mod, M, dtype=torch.cfloat):
     else:
         raise ValueError("mod should be PAM, ASK, SQAM, QAM or DDQAM")
 
+    if sqrt_flag:
+        constellation = np.sqrt(np.abs(constellation))*constellation/(np.abs(constellation)+1e-30)
     constellation = constellation / np.sqrt(np.mean(np.abs(constellation) ** 2))
     return torch.tensor(constellation, dtype=dtype)
 
@@ -157,6 +160,7 @@ def set_up_DD_system(N_os, N_sim, **kwargs):
     kwargs:
     mod_format:     constellation type (string: PAM, ASK, SQAM, QAM or DDQAM)
     M:              constellation order (integer) give together with mod_format
+    sqrt_flag:      whether to apply the sqrt to all symbol's magnitudes or not (boolean default: False)
     diff_encoder:   boolean to use or no differential encoding give together with mod_format and M
     constellation:  constellation to be used (1D tensor)
     alpha:          roll off factor of a raised cosine filter used as a pulse shape (float in [0,1])
@@ -174,7 +178,10 @@ def set_up_DD_system(N_os, N_sim, **kwargs):
     pulse_shape = None
     ch_imp_resp = None
     if {"mod_format", "M"} <= kwargs.keys():
-        constellation = common_constellation(kwargs["mod_format"], kwargs["M"])
+        if "sqrt_flag" in kwargs.keys():
+            constellation = common_constellation(kwargs["mod_format"], kwargs["M"], sqrt_flag=kwargs["sqrt_flag"])
+        else:
+            constellation = common_constellation(kwargs["mod_format"], kwargs["M"])
         if "diff_encoder" in kwargs.keys():
             if kwargs["diff_encoder"]:
                 diff_encoder = common_diff_encoder(kwargs["mod_format"], constellation)
