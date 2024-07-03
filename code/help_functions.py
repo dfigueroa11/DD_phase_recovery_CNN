@@ -196,3 +196,18 @@ def set_up_DD_system(N_os, N_sim, **kwargs):
         rx_filt = torch.tensor([1.])
     return DD_system.DD_system(N_os, N_sim, constellation , diff_encoder, pulse_shape, ch_imp_resp, rx_filt)
 
+def DD_1sym_ISI(x, h0=1, h1=1/2):
+    '''Apply ideal DD for a channel with one symbol ISI, with Tx_filter = [h1, h0, h1]
+    
+    Arguments:
+    x:      input signal (tensor of size (batch_size, 1, N_sym))
+    h0:     center filter coefficient, default: 1
+    h1:     side filter coefficients, default: 1/2
+
+    Returns:
+    y:      signal (tensor of size ((batch_size, 1, 2*N_sym))
+    '''
+    y_1sym_ISI = torch.zeros(x.size(dim=0), x.size(dim=1), 2*x.size(dim=2))
+    y_1sym_ISI[:,:,1::2] = torch.square(torch.abs(h0*x))
+    y_1sym_ISI[:,:,0::2] = torch.square(torch.abs(h1*x+h1*torch.roll(x, 1, dims=-1)))
+    return y_1sym_ISI
