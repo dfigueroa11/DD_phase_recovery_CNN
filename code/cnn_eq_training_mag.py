@@ -33,7 +33,7 @@ dd_system = hlp.set_up_DD_system(N_os= 2, N_sim=2,
 
 num_ch = [1,6,8,3,1]
 ker_lens = [21,15,9,9]
-strides = [1,1,1,1]
+strides = [1,1,1,2]
 activ_func = torch.nn.ELU()
 cnn_equalizer = CNN_equalizer.CNN_equalizer(num_ch, ker_lens, strides, activ_func)
 
@@ -41,7 +41,7 @@ optimizer = optim.Adam(cnn_equalizer.parameters(), eps=1e-07)
 
 
 batches_per_epoch = 300
-batch_size_per_epoch = [100, 300,]
+batch_size_per_epoch = [100, 300]
 N_sym = 1000
 SNR_dB_steps = [*range(40,41)]
 loss_func = MSELoss(reduction='mean')
@@ -57,7 +57,7 @@ for SNR_dB in SNR_dB_steps:
             y_hat = cnn_equalizer(y)
             
             y_1_ISI = hlp.DD_1sym_ISI(x,dd_system.tx_filt[0,0,N_taps//2],dd_system.tx_filt[0,0,N_taps//2+1])*dd_system.rx_filt[0,0,0]
-            loss = loss_func(y_1_ISI, y_hat)
+            loss = loss_func(y_1_ISI[:,:,1::2], y_hat)
             
             loss.backward()
             optimizer.step()
@@ -77,19 +77,12 @@ y_1_ISI = y_1_ISI.detach().cpu().numpy()
 y_hat = y_hat.detach().cpu().numpy()
 
 
-plt.figure()
-plt.title("Phase sample")
-plt.hist(y_1_ISI[:,:,0::2].flatten(), 20, alpha=1, label='ideal DD')
-plt.hist(y[:,:,0::2].flatten(), 200, alpha=0.5, label='DD out')
-plt.hist(y_hat[:,:,0::2].flatten(), 200, alpha=0.5, label='CNN out')
-plt.ylim(0,2e4)
-plt.legend(loc='upper right')
 
 plt.figure()
 plt.title("Magnitude sample")
 plt.hist(y_1_ISI[:,:,1::2].flatten(), 20, alpha=1, label='ideal DD',)
 plt.hist(y[:,:,1::2].flatten(), 200, alpha=0.5, label='DD out')
-plt.hist(y_hat[:,:,1::2].flatten(), 200, alpha=0.5, label='CNN out')
+plt.hist(y_hat.flatten(), 200, alpha=0.5, label='CNN out')
 plt.ylim(0,2e4)
 plt.legend(loc='upper right')
 plt.show()
