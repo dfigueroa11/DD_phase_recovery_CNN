@@ -218,3 +218,17 @@ def DD_1sym_ISI(x, h0=1, h1=1/2):
     y_1sym_ISI[:,:,1::2] = torch.square(torch.abs(h0*x))
     y_1sym_ISI[:,:,0::2] = torch.square(torch.abs(h1*x+h1*torch.roll(x, 1, dims=-1)))
     return y_1sym_ISI
+
+def get_ER(tx, rx, tol=1e-5): 
+    assert tx.size() == rx.size() , "only for one dimensional inputs"
+    return torch.sum(abs(tx-rx)>tol)/torch.numel(tx)
+
+def nearest_neighbor(reference, rx_syms):
+        distance = torch.abs(reference - rx_syms[...,None])
+        hard_dec_idx = torch.argmin(distance, dim=-1)
+        return reference[hard_dec_idx]
+
+def decode_and_ER(tx, rx, precision=10):
+    reference = torch.unique(torch.round(torch.flatten(tx), decimals=precision))
+    rx_deco = nearest_neighbor(reference, rx)
+    return get_ER(tx,rx_deco)
