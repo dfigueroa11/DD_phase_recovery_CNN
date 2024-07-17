@@ -13,9 +13,9 @@ print("We are using the following device for learning:",device)
 
 N_taps = 41
 mod_format = "PAM"
-M = 2
+M = 4
 dd_system = hlp.set_up_DD_system(N_os= 2, N_sim=2,
-                            mod_format=mod_format, M=M, sqrt_flag=False,
+                            mod_format=mod_format, M=M, sqrt_flag=True,
                             diff_encoder=False,
                             N_taps=N_taps,     
                             alpha=0, 
@@ -66,7 +66,8 @@ for SNR_dB in SNR_dB_steps:
             optimizer.zero_grad()
             loss_evolution.append(loss.detach().cpu().numpy())
             if (i+1)%(batches_per_epoch//checkpoint_per_epoch) == 0:  
-                print(f"\tBatch size {batch_size:_}, Train step {i:_} from {batches_per_epoch:_}, {loss_evolution[-1]}")
+                SER = hlp.decode_and_ER(y_1_ISI[:,:,1::2].detach().cpu(),y_hat.detach().cpu())
+                print(f"\tBatch size {batch_size:_}\tTrain step {i:_} from {batches_per_epoch:_}\t loss: {loss_evolution[-1]:.3e}\t SER: {SER:.3e}")
             
 
 
@@ -75,6 +76,8 @@ cnn_equalizer.eval()
 y_hat = cnn_equalizer(y)
 
 y_1_ISI = hlp.DD_1sym_ISI(x,dd_system.tx_filt[0,0,N_taps//2],dd_system.tx_filt[0,0,N_taps//2+1])*dd_system.rx_filt[0,0,0]
+SER = hlp.decode_and_ER(y_1_ISI[:,:,1::2],y_hat)
+print(f"SER: {SER:.3e}")
 y_1_ISI = y_1_ISI.detach().cpu().numpy()
 y_hat = y_hat.detach().cpu().numpy()
 

@@ -13,13 +13,13 @@ print("We are using the following device for learning:",device)
 
 N_taps = 41
 mod_format = "QAM"
-M = 4
+M = 4 
 dd_system = hlp.set_up_DD_system(N_os= 2, N_sim=2,
                             mod_format=mod_format, M=M, sqrt_flag=False,
                             diff_encoder=False,
                             N_taps=N_taps,     
                             alpha=0, 
-                            L_link=30e3, R_sym=35e9, beta2=-2.168e-26)
+                            L_link=0e3, R_sym=35e9, beta2=-2.168e-26)
 
 ### to determine an appropriate number of taps for the tx_filter choose a big number of taps above
 ### and use the code below to determine an appropriate number of taps
@@ -65,8 +65,9 @@ for SNR_dB in SNR_dB_steps:
             optimizer.step()
             optimizer.zero_grad()
             loss_evolution.append(loss.detach().cpu().numpy())
-            if (i+1)%(batches_per_epoch//checkpoint_per_epoch) == 0:  
-                print(f"\tBatch size {batch_size:_}, Train step {i:_} from {batches_per_epoch:_}, {loss_evolution[-1]}")
+            if (i+1)%(batches_per_epoch//checkpoint_per_epoch) == 0:
+                SER = hlp.decode_and_ER(y_1_ISI[:,:,2::2].detach().cpu(),y_hat[:,:,1:].detach().cpu())
+                print(f"\tBatch size {batch_size:_}\tTrain step {i:_} from {batches_per_epoch:_}\t loss: {loss_evolution[-1]:.3e}\t SER: {SER:.3e}")
             
 
 
@@ -75,6 +76,8 @@ cnn_equalizer.eval()
 y_hat = cnn_equalizer(y)
 
 y_1_ISI = hlp.DD_1sym_ISI(x,dd_system.tx_filt[0,0,N_taps//2],dd_system.tx_filt[0,0,N_taps//2+1])*dd_system.rx_filt[0,0,0]
+SER = hlp.decode_and_ER(y_1_ISI[:,:,2::2],y_hat[:,:,1:])
+print(f"SER: {SER:.3e}")
 y_1_ISI = y_1_ISI.detach().cpu().numpy()
 y_hat = y_hat.detach().cpu().numpy()
 
