@@ -12,8 +12,10 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("We are using the following device for learning:",device)
 
 N_taps = 41
+mod_format = "QAM"
+M = 4
 dd_system = hlp.set_up_DD_system(N_os= 2, N_sim=2,
-                            mod_format="ASK", M=2, sqrt_flag=True,
+                            mod_format=mod_format, M=M, sqrt_flag=False,
                             diff_encoder=False,
                             N_taps=N_taps,     
                             alpha=0, 
@@ -86,4 +88,5 @@ plt.hist(y[:,:,0::2].flatten(), 200, alpha=0.5, label='DD out')
 plt.hist(y_hat.flatten(), 200, alpha=0.5, label='CNN out')
 plt.ylim(0,2e4)
 plt.legend(loc='upper right')
-plt.show()
+plt.savefig(f"{mod_format}{M:}_phase_bigCNN.png")
+# plt.show()

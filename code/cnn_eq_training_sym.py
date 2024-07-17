@@ -12,10 +12,13 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("We are using the following device for learning:",device)
 
 
+N_taps = 41
+mod_format = "PAM"
+M = 4
 dd_system = hlp.set_up_DD_system(N_os= 2, N_sim=2,
-                            mod_format="PAM", M=4, sqrt_flag=False,
+                            mod_format=mod_format, M=M, sqrt_flag=False,
                             diff_encoder=False,
-                            N_taps=41,     
+                            N_taps=N_taps,     
                             alpha=0, 
                             L_link=30e3, R_sym=35e9, beta2=-2.168e-26)
 
@@ -28,9 +31,9 @@ dd_system = hlp.set_up_DD_system(N_os= 2, N_sim=2,
 # plt.stem(torch.abs(filt)**2)
 # plt.show()
 
-num_ch = [1,3,3,2]
-ker_lens = [21,15,9]
-strides = [1,1,2]
+num_ch = [1,6,8,3,2]
+ker_lens = [21,15,9,9]
+strides = [1,1,1,2]
 activ_func = torch.nn.ELU()
 cnn_equalizer = CNN_equalizer.CNN_equalizer(num_ch, ker_lens, strides, activ_func)
 
@@ -38,7 +41,7 @@ optimizer = optim.Adam(cnn_equalizer.parameters(), eps=1e-07)
 
 
 batches_per_epoch = 300
-batch_size_per_epoch = [100, 300, 500]
+batch_size_per_epoch = [100, 300]
 N_sym = 1000
 SNR_dB_steps = [*range(40,41)]
 loss_func = MSELoss(reduction='mean')
@@ -76,4 +79,5 @@ plt.figure()
 plt.scatter(x_hat[:,0,:],x_hat[:,1,:], alpha=0.5, label="CNN_eq")
 plt.scatter(np.real(x),np.imag(x), alpha=0.5, label="DD_input")
 plt.legend()
-plt.show()
+plt.savefig(f"{mod_format}{M:}_sym_bigCNN.png")
+# plt.show()
