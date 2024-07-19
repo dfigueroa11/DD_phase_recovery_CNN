@@ -15,11 +15,11 @@ print("We are using the following device for learning:",device)
 N_taps = 41
 mod_format = "PAM"
 M = 4
-dd_system = hlp.set_up_DD_system(N_os= 2, N_sim=2,
+dd_system = hlp.set_up_DD_system(N_os=2, N_sim=2,
                             mod_format=mod_format, M=M, sqrt_flag=False,
                             diff_encoder=False,
-                            N_taps=N_taps,     
-                            alpha=0, 
+                            N_taps=N_taps,
+                            alpha=0,
                             L_link=30e3, R_sym=35e9, beta2=-2.168e-26)
 
 # ### to determine an appropriate number of taps for the tx_filter choose a big number of taps above

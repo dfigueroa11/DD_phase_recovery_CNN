@@ -9,13 +9,13 @@ import DD_system
 import CNN_equalizer
 
 def initialize_dd_system():
-    return hlp.set_up_DD_system(N_os= 2, N_sim=2,
+    return hlp.set_up_DD_system(N_os=N_os, N_sim=N_sim,
                                 mod_format=mod_format, M=M, sqrt_flag=False,
                                 diff_encoder=False,
-                                N_taps=N_taps,     
-                                alpha=0, 
-                                L_link=0e3, R_sym=35e9, beta2=-2.168e-26)
-    
+                                N_taps=N_taps,
+                                alpha=alpha,
+                                L_link=L_link, R_sym=R_sym, beta2=beta2)
+
 def initialize_CNN_optimizer(lr):
     cnn_equalizer = CNN_equalizer.CNN_equalizer(num_ch, ker_lens, strides, activ_func)
     optimizer = optim.Adam(cnn_equalizer.parameters(), eps=1e-07, lr=lr)
@@ -69,12 +69,13 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("We are using the following device for learning:",device)
 
 ### System definition
-N_taps = 41
+N_os = 2
+N_sim = 2
 mod_format = "ASK"
 M = 2
 sqrt_flag = False
 diff_encoder = False
-N_taps = N_taps
+N_taps = 41
 alpha = 0
 R_sym = 35e9
 beta2 = -2.168e-26
@@ -100,7 +101,6 @@ for lr in lr_steps:
         for L_link in L_link_steps:
             print(f'training model with lr={lr}, L_link={L_link*1e-3:.0f}km, SNR{SNR_dB} dB')
             dd_system = initialize_dd_system()
-            cnn_equalizer, optimizer = initialize_CNN_optimizer(0.001)
+            cnn_equalizer, optimizer = initialize_CNN_optimizer(lr)
             train_CNN()
             eval_n_save_CNN()
-    

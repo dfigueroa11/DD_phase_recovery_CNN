@@ -24,8 +24,8 @@ class DD_system():
             rx_filt:        taps of the receiver FIR filter (1D tensor with odd length)
         '''
         self.N_os = N_os
-        self.N_sim = N_sim  
-        self.d = N_sim//N_os 
+        self.N_sim = N_sim
+        self.d = N_sim//N_os
         self.constellation = constellation
         self.diff_encoder = diff_encoder
         if pulse_shape is not None and ch_imp_resp is not None:

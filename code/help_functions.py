@@ -15,9 +15,9 @@ def cascade_filters(filt_1, filt_2):
     Return:
     filt_out:           combination of the filters (1D tensor of length equal to the input filters)
     '''
-    FILT_1 =  torch.fft.fft(torch.fft.ifftshift(filt_1))
-    FILT_2 =  torch.fft.fft(torch.fft.ifftshift(filt_2))
-    return  torch.fft.fftshift(torch.fft.ifft(FILT_1*FILT_2))
+    FILT_1 = torch.fft.fft(torch.fft.ifftshift(filt_1))
+    FILT_2 = torch.fft.fft(torch.fft.ifftshift(filt_2))
+    return torch.fft.fftshift(torch.fft.ifft(FILT_1*FILT_2))
 
 def convolve(signal, filter):
     '''Apply the convolution to the signals using the conv1d torch function
@@ -99,7 +99,7 @@ def rcos_filt(alpha, N_taps, fs, sym_time, dtype=torch.cfloat):
     t_vec = (np.arange(N_taps)-(N_taps-1)/2)/fs
     if alpha == 0:
         return torch.tensor(np.sinc(t_vec/sym_time), dtype=dtype)
-    rcos =  np.where(np.abs(t_vec) == sym_time/(2*alpha), np.pi/4*np.sinc(1/(2*alpha)), \
+    rcos = np.where(np.abs(t_vec) == sym_time/(2*alpha), np.pi/4*np.sinc(1/(2*alpha)), \
                      np.sinc(t_vec/sym_time)*(np.cos(np.pi*alpha*t_vec/sym_time))/(1-(2*alpha*t_vec/sym_time)**2))
     return torch.tensor(rcos, dtype=dtype)
 
@@ -172,7 +172,7 @@ def set_up_DD_system(N_os, N_sim, **kwargs):
     R_sym:          symbol rate in Hz (float) use if the channel presents CD
     beta2:          beta2 parameter of the SMF in s^2/m (float)
     ch_imp_resp:    particular chanel impulse response to be used (1D tensor)
-    rx_filt:        particular receiver filter to be used (1D tensor), 
+    rx_filt:        particular receiver filter to be used (1D tensor),
                     if not specified uses a ideal LP filter simulate sampler BW, and if N_sim=N_os is a delta function
     '''
     constellation = None
@@ -269,7 +269,7 @@ def analyse_channel_length(N_os, N_sim, N_taps, alpha, L_link, R_sym, beta2=-2.1
     energy_criteria:    float between 0 and 100, interpreted as a percentage (default 99%)
     '''
     dd_system = set_up_DD_system(N_os= N_os, N_sim=N_sim,
-                                N_taps=N_taps,     
+                                N_taps=N_taps,
                                 alpha=alpha, 
                                 L_link=L_link, R_sym=R_sym, beta2=beta2)
 

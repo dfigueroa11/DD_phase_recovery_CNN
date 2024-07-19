@@ -44,7 +44,7 @@ class Differential_encoder():
         
     def encode(self, u, x0_phase_idx=0): 
         '''
-        Apply the differential encoding 
+        Apply the differential encoding
 
         Arguments:
         u:              the incoming symbols (Tensor of size (batch_size, 1, N_sym))
