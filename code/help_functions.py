@@ -1,6 +1,8 @@
 import numpy as np
 import torch
+import matplotlib.pyplot as plt
 from torch.nn.functional import conv1d
+
 import DD_system
 import Differential_encoder
 
@@ -252,3 +254,30 @@ def decode_and_ER(Tx, Rx, precision=10):
     alphabet = torch.unique(torch.round(torch.flatten(Tx), decimals=precision))
     Rx_deco = min_distance_dec(alphabet, Rx)
     return get_ER(Tx,Rx_deco)
+
+def analyse_channel_length(N_os, N_sim, N_taps, alpha, L_link, R_sym, beta2=-2.168e-26, energy_criteria = 99):
+    ''' Function to determine the number of required taps for the channel filter, assuming a raised cosine and a chromatic dispersion channel
+
+    Arguments:
+    N_os:               oversampling factor of the physical system (integer)
+    N_sim:              oversampling factor used during the simulation to avoid aliasing (integer multiple of N_os)
+    N_taps:             number of taps used for the test filter (integer)
+    alpha:              roll off factor of a raised cosine filter used as a pulse shape (float in [0,1])
+    L_link:             length of the SMF in meters (float) use if the channel presents CD
+    R_sym:              symbol rate in Hz (float) use if the channel presents CD
+    beta2:              beta2 parameter of the SMF in s^2/m (float default 2.168e-26)
+    energy_criteria:    float between 0 and 100, interpreted as a percentage (default 99%)
+    '''
+    dd_system = set_up_DD_system(N_os= N_os, N_sim=N_sim,
+                                N_taps=N_taps,     
+                                alpha=alpha, 
+                                L_link=L_link, R_sym=R_sym, beta2=beta2)
+
+    filt, N_taps = filt_windowing(torch.squeeze(dd_system.tx_filt), energy_criteria)
+    print(f"{N_taps} tap are needed to contain the {energy_criteria}% of the energy")
+    plt.figure()
+    t = np.arange(-np.floor(torch.numel(filt)/2),np.floor(torch.numel(filt)/2)+1)
+    plt.stem(t, np.abs(filt)**2)
+    t = np.arange(-np.floor(torch.numel(dd_system.tx_filt)/2),np.floor(torch.numel(dd_system.tx_filt)/2)+1)
+    plt.stem(t, np.abs(torch.squeeze(dd_system.tx_filt))**2, linefmt=':')
+    plt.show()
