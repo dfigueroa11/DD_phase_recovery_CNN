@@ -219,16 +219,36 @@ def DD_1sym_ISI(x, h0=1, h1=1/2):
     y_1sym_ISI[:,:,0::2] = torch.square(torch.abs(h1*x+h1*torch.roll(x, 1, dims=-1)))
     return y_1sym_ISI
 
-def get_ER(tx, rx, tol=1e-5): 
-    assert tx.size() == rx.size() , "only for one dimensional inputs"
-    return torch.sum(abs(tx-rx)>tol)/torch.numel(tx)
+def get_ER(Tx, Rx, tol=1e-5):
+    ''' Calculate the error rate between Tx and Rx with a given tolerance, that means count
+    the number of positions where Tx and Rx differ, and divide by the number of elements
 
-def nearest_neighbor(reference, rx_syms):
-        distance = torch.abs(reference - rx_syms[...,None])
-        hard_dec_idx = torch.argmin(distance, dim=-1)
-        return reference[hard_dec_idx]
+    Arguments:
+    Tx:     tensor of transmitted elements (same size as Rx)
+    Rx:     tensor of received elements (same size as Tx)
+    tol:    tolerance, so Tx is considered equal to Rx if |Tx-Rx| < tol (float, default 1e-5)
+    '''
+    assert Tx.size() == Rx.size() , "Tx and Rx must have the same size"
+    return torch.sum(abs(Tx-Rx)>tol)/torch.numel(Tx)
 
-def decode_and_ER(tx, rx, precision=10):
-    reference = torch.unique(torch.round(torch.flatten(tx), decimals=precision))
-    rx_deco = nearest_neighbor(reference, rx)
-    return get_ER(tx,rx_deco)
+def min_distance_dec(alphabet, Rx):
+    ''' Decodes the elements in Rx using minimum distance criteria with respect to the elements in alphabet
+
+    Arguments:
+    alphabet:   1D tensor with the elements to determine the minimum distance
+    Rx:         tensor with the symbols to decode (arbitrary size)
+    '''
+    hard_dec_idx = torch.argmin(torch.abs(alphabet - Rx[...,None]), dim=-1)
+    return alphabet[hard_dec_idx]
+
+def decode_and_ER(Tx, Rx, precision=10):
+    ''' Decodes under minimum distance criteria and calculates the error rate between Tx and Rx
+
+    Arguments:
+    Tx:         noiseless transmitted symbols (the alphabet is computed from Tx ass all different values that Tx take, that is why Tx must be noiseless)
+    Rx:         received symbols (same size as Tx)
+    precision:  number of decimals used to determine the alphabet in the rounding process
+    '''
+    alphabet = torch.unique(torch.round(torch.flatten(Tx), decimals=precision))
+    Rx_deco = min_distance_dec(alphabet, Rx)
+    return get_ER(Tx,Rx_deco)
