@@ -79,7 +79,7 @@ N_taps = 41
 alpha = 0
 R_sym = 35e9
 beta2 = -2.168e-26
-L_link_steps = torch.tensor([*range(25,35,5)])*1e3      # for sweep over L_link
+L_link_steps = np.array([*range(25,35,5)])*1e3      # for sweep over L_link
 SNR_dB_steps = [*range(40,42)]                          # for sweep over SNR
 
 ### CNN definition
