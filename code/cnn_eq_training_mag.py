@@ -4,6 +4,7 @@ from torch.nn import MSELoss
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import sys
 
 import help_functions as hlp
 import DD_system
@@ -80,11 +81,12 @@ def eval_n_save_CNN():
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("We are using the following device for learning:",device)
 
+arguments = sys.argv[1:]
 ### System definition
 N_os = 2
 N_sim = 2
-mod_format = "PAM"
-M = 2
+mod_format = arguments[0]
+M = int(arguments[1])
 sqrt_flag = False
 diff_encoder = False
 N_taps = 41
