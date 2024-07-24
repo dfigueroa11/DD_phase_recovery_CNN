@@ -92,9 +92,9 @@ diff_encoder = False
 N_taps = 41
 R_sym = 35e9
 beta2 = -2.168e-26
-alpha_steps = np.array([0.2,])                      # for sweep over alpha
-L_link_steps = np.array([*range(25,35,5)])*1e3      # for sweep over L_link
-SNR_dB_steps = [*range(40,42)]                          # for sweep over SNR
+alpha_steps = np.arange(0,1.1,0.1)               # for sweep over alpha
+L_link_steps = np.arange(0,35,5)*1e3      # for sweep over L_link
+SNR_dB_steps = np.arange(30,51,2)                          # for sweep over SNR
 
 ### CNN definition
 num_ch = [1,6,8,3,1]
@@ -103,12 +103,12 @@ strides = [1,1,1,2]
 activ_func = torch.nn.ELU()
 
 ### Training hyperparameter
-batches_per_epoch = 30
-batch_size_per_epoch = [100, 300]
+batches_per_epoch = 300
+batch_size_per_epoch = [100, 300, 500]
 N_sym = 1000
-lr_steps = [0.001, 0.002]                               # for sweep over lr
+lr_steps = [0.0005, 0.0007, 0.001, 0.002, 0.003, 0.005]                               # for sweep over lr
 
-checkpoint_per_epoch = 10
+checkpoint_per_epoch = 20
 
 folder_path = create_results_folder(f"results/{mod_format}{M:}_mag",0)
 for lr in lr_steps:
