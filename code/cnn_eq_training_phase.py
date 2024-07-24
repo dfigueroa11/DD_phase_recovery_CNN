@@ -3,10 +3,21 @@ import torch.optim as optim
 from torch.nn import MSELoss 
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 import help_functions as hlp
 import DD_system
 import CNN_equalizer
+
+def create_results_folder(path,n_copy):
+    try:
+        real_path = f"{path}_{n_copy}" if n_copy > 0 else path
+        os.makedirs(real_path)
+        return real_path
+    except Exception as e:
+        n_copy += 1
+        print(f"directory '{path}' already exist, try to create '{path}_{n_copy}'")
+        return create_results_folder(path,n_copy)
 
 def initialize_dd_system():
     return hlp.set_up_DD_system(N_os=N_os, N_sim=N_sim,
@@ -61,9 +72,10 @@ def eval_n_save_CNN():
     plt.ylim(0,2e4)
     plt.legend(loc='upper right')
     lr_str = f"{lr:}".replace('.', 'p')
-    plt.savefig(f"phase_{mod_format}{M:}_{SNR_dB}dB_lr{lr_str}_Llink{L_link*1e-3:.0f}km.png")
-    with open(file_path, 'a') as file:
-        file.write(f"{mod_format}{M:}_{SNR_dB}dB_lr{lr_str}_Llink{L_link*1e-3:.0f}km --> SER:{SER:.10e}\n")
+    alpha_str = f"{alpha:.1f}".replace('.', 'p')
+    plt.savefig(f"{folder_path}/lr{lr_str}_Llink{L_link*1e-3:.0f}km_alpha{alpha_str}_{SNR_dB}dB.png")
+    with open(f"{folder_path}/SER_results.txt", 'a') as file:
+        file.write(f"lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB}dB --> SER:{SER:.10e}\n")
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("We are using the following device for learning:",device)
@@ -76,11 +88,11 @@ M = 2
 sqrt_flag = False
 diff_encoder = False
 N_taps = 41
-alpha = 0
 R_sym = 35e9
 beta2 = -2.168e-26
-L_link_steps = np.array([*range(25,35,5)])*1e3      # for sweep over L_link
-SNR_dB_steps = [*range(40,42)]                          # for sweep over SNR
+alpha_steps = np.array([0.2,])                        # for sweep over alpha
+L_link_steps = np.array([*range(25,30,5)])*1e-3      # for sweep over L_link
+SNR_dB_steps = [*range(100,101)]                      # for sweep over SNR
 
 ### CNN definition
 num_ch = [1,6,8,3,1]
@@ -89,18 +101,20 @@ strides = [1,1,1,2]
 activ_func = torch.nn.ELU()
 
 ### Training hyperparameter
-batches_per_epoch = 30
-batch_size_per_epoch = [100, 300]
-N_sym = 1000
+batches_per_epoch = 3
+batch_size_per_epoch = [1, 3]
+N_sym = 100
 lr_steps = [0.001, 0.002]                               # for sweep over lr
 
-checkpoint_per_epoch = 10
-file_path = f"{mod_format}{M:}_phase.txt"
+checkpoint_per_epoch = 1
+
+folder_path = create_results_folder(f"results/{mod_format}{M:}_phase",0)
 for lr in lr_steps:
-    for SNR_dB in SNR_dB_steps:
-        for L_link in L_link_steps:
-            print(f'training model with lr={lr}, L_link={L_link*1e-3:.0f}km, SNR{SNR_dB} dB')
-            dd_system = initialize_dd_system()
-            cnn_equalizer, optimizer = initialize_CNN_optimizer(lr)
-            train_CNN()
-            eval_n_save_CNN()
+    for L_link in L_link_steps:
+        for alpha in alpha_steps:
+            for SNR_dB in SNR_dB_steps:
+                print(f'training model with lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB} dB')
+                dd_system = initialize_dd_system()
+                cnn_equalizer, optimizer = initialize_CNN_optimizer(lr)
+                train_CNN()
+                eval_n_save_CNN()
