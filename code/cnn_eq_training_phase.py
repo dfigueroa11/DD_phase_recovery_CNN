@@ -42,7 +42,7 @@ def train_CNN():
             _, x, y = dd_system.simulate_transmission(batch_size, N_sym, SNR_dB)
             y_hat = cnn_equalizer(y)
             
-            y_1_ISI = hlp.DD_1sym_ISI(x,dd_system.tx_filt[0,0,N_taps//2],dd_system.tx_filt[0,0,N_taps//2+1])*dd_system.rx_filt[0,0,0]
+            y_1_ISI = hlp.DD_1sym_ISI(x,dd_system.tx_filt[0,0,N_taps//2],dd_system.tx_filt[0,0,N_taps//2+1])*torch.max(dd_system.rx_filt)
             loss = loss_func(y_1_ISI[:,:,0::2], y_hat)
             
             loss.backward()
@@ -59,7 +59,7 @@ def eval_n_save_CNN():
     cnn_equalizer.eval()
     y_hat = cnn_equalizer(y)
 
-    y_1_ISI = hlp.DD_1sym_ISI(x,dd_system.tx_filt[0,0,N_taps//2],dd_system.tx_filt[0,0,N_taps//2+1])*dd_system.rx_filt[0,0,0]
+    y_1_ISI = hlp.DD_1sym_ISI(x,dd_system.tx_filt[0,0,N_taps//2],dd_system.tx_filt[0,0,N_taps//2+1])*torch.max(dd_system.rx_filt)
     SER = hlp.decode_and_ER(y_1_ISI[:,:,2::2],y_hat[:,:,1:])
     print(f"\tfinal SER: {SER:.3e}")
     y_1_ISI = y_1_ISI.detach().cpu().numpy()
