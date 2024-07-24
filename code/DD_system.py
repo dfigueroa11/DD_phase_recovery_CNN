@@ -55,7 +55,7 @@ class DD_system():
             x = u
         x_up = torch.kron(x,torch.eye(self.N_sim)[-1])
         z = torch.square(torch.abs(hlp.convolve(x_up, self.tx_filt)))
-        var_n = torch.tensor([self.N_sim/SNR_lin])
+        var_n = torch.tensor([self.N_sim/SNR_lin], dtype=torch.float32)
         y = z + torch.sqrt(var_n)*torch.randn_like(z)
         y = hlp.convolve(y, self.rx_filt)
         return u, x, y[:,:,self.d-1::self.d]
