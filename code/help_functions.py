@@ -191,6 +191,7 @@ def set_up_DD_system(N_os, N_sim, **kwargs):
         constellation = kwargs["constellation"]    
     if {"alpha", "N_taps"} <= kwargs.keys():
         pulse_shape = rcos_filt(kwargs["alpha"], kwargs["N_taps"], N_sim, 1)
+        N_sim = 4 if kwargs["alpha"] > 0 else N_sim
     elif "pulse_shape" in kwargs.keys():
         pulse_shape = kwargs["pulse_shape"]
     if {"L_link", "R_sym", "beta2", "N_taps"} <= kwargs.keys():
