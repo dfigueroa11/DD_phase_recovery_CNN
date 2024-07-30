@@ -201,7 +201,7 @@ def set_up_DD_system(N_os, N_sim, **kwargs):
     if "rx_filt" in kwargs.keys():
         rx_filt = kwargs["rx_filt"]
     elif N_sim > N_os:
-        rx_filt = rcos_filt(0, len(pulse_shape), N_os, 1, dtype=torch.float32)
+        rx_filt = rcos_filt(0, len(pulse_shape), N_sim, 1/2, dtype=torch.float32)
     else:
         rx_filt = torch.tensor([1.])
     return DD_system.DD_system(N_os, N_sim, constellation , diff_encoder, pulse_shape, ch_imp_resp, rx_filt)
