@@ -222,6 +222,18 @@ def DD_1sym_ISI(x, h0=1, h1=1/2):
     y_1sym_ISI[:,:,0::2] = torch.square(torch.abs(h1*x+h1*torch.roll(x, 1, dims=-1)))
     return y_1sym_ISI
 
+def abs_phase_diff(x, dim=-1):
+    '''Computes the phase difference between adjacent symbols
+    
+    Arguments:
+    x:      input signal (tensor of size (batch_size, 1, N_sym))
+    dim:    dimension to do the phase difference (default -1)
+
+    Returns:
+    signal (tensor of size ((batch_size, 1, N_sym))
+    '''
+    return torch.abs(torch.diff(torch.angle(x)))
+
 def get_ER(Tx, Rx, tol=1e-5):
     ''' Calculate the error rate between Tx and Rx with a given tolerance, that means count
     the number of positions where Tx and Rx differ, and divide by the number of elements
