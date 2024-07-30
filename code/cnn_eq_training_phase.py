@@ -75,6 +75,7 @@ def eval_n_save_CNN():
     lr_str = f"{lr:}".replace('.', 'p')
     alpha_str = f"{alpha:.1f}".replace('.', 'p')
     plt.savefig(f"{folder_path}/lr{lr_str}_Llink{L_link*1e-3:.0f}km_alpha{alpha_str}_{SNR_dB}dB.png")
+    plt.close()
     with open(f"{folder_path}/SER_results.txt", 'a') as file:
         file.write(f"lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB}dB --> SER:{SER:.10e}\n")
 
@@ -92,9 +93,9 @@ diff_encoder = False
 N_taps = 41
 R_sym = 35e9
 beta2 = -2.168e-26
-alpha_steps = np.arange(0,1.1,0.1)               # for sweep over alpha
-L_link_steps = np.arange(0,35,5)*1e3      # for sweep over L_link
-SNR_dB_steps = np.arange(30,51,2)                          # for sweep over SNR
+alpha_steps = np.arange(0,1)               # for sweep over alpha
+L_link_steps = np.arange(0,35,10)*1e3      # for sweep over L_link
+SNR_dB_steps = np.arange(30,51,5)                          # for sweep over SNR
 
 ### CNN definition
 num_ch = [1,6,8,3,1]
