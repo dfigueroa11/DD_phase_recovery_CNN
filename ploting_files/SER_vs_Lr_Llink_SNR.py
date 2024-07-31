@@ -3,8 +3,10 @@ import matplotlib.pyplot as plt
 import matplotlib.axes
 import re
 
-folders = ["ASK2_phase", "ASK4_phase", "QAM4_phase", "DDQAM4_phase", "PAM2_mag", "PAM4_mag", "ASK4_mag", "ASK2_phase_diff"]
-folder = folders[0]
+folders = ["ASK2_phase", "ASK4_phase", "QAM4_phase", "DDQAM4_phase",
+           "PAM2_mag", "PAM4_mag", "ASK4_mag",
+           "ASK2_phase_diff", "ASK4_phase_diff", "QAM4_phase_diff"]
+folder = folders[-2]
 file_path = f"/Users/diegofigueroa/Desktop/results/{folder}/SER_results.txt"
 data = []
 with open(file_path, 'r') as file:
