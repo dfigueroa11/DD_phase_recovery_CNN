@@ -111,7 +111,7 @@ lr_steps = [0.0005, 0.0007, 0.001, 0.002, 0.003, 0.005]                         
 
 checkpoint_per_epoch = 20
 
-folder_path = create_results_folder(f"results/{mod_format}{M:}_phase",0)
+folder_path = create_results_folder(f"results/{mod_format}{M:}_phase_diff",0)
 for lr in lr_steps:
     for L_link in L_link_steps:
         for alpha in alpha_steps:
