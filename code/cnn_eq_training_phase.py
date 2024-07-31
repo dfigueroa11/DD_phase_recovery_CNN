@@ -63,23 +63,25 @@ def eval_n_save_CNN():
     y_1_ISI = hlp.DD_1sym_ISI(x,dd_system.tx_filt[0,0,N_taps//2],dd_system.tx_filt[0,0,N_taps//2+1])*torch.max(dd_system.rx_filt)
     SER = hlp.decode_and_ER(y_1_ISI[:,:,2::2],y_hat[:,:,1:])
     print(f"\tfinal SER: {SER:.3e}")
-    y_1_ISI = y_1_ISI.detach().cpu().numpy()
-    y_hat = y_hat.detach().cpu().numpy()
-    y = y.detach().cpu().numpy()
-
-    plt.figure()
-    plt.title("Phase sample")
-    plt.hist(y_1_ISI[:,:,0::2].flatten(), 20, alpha=1, label='ideal DD')
-    plt.hist(y[:,:,0::2].flatten(), 200, alpha=0.5, label='DD out')
-    plt.hist(y_hat.flatten(), 200, alpha=0.5, label='CNN out')
-    plt.ylim(0,2e4)
-    plt.legend(loc='upper right')
-    lr_str = f"{lr:}".replace('.', 'p')
-    alpha_str = f"{alpha:.1f}".replace('.', 'p')
-    plt.savefig(f"{folder_path}/lr{lr_str}_Llink{L_link*1e-3:.0f}km_alpha{alpha_str}_{SNR_dB}dB.png")
-    plt.close()
+    
     with open(f"{folder_path}/SER_results.txt", 'a') as file:
         file.write(f"lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB}dB --> SER:{SER:.10e}\n")
+    
+    if SNR_dB in SNR_save_fig and lr in lr_save_fig and L_link in L_link_save_fig and alpha in alpha_save_fig:
+        y_1_ISI = y_1_ISI.detach().cpu().numpy()
+        y_hat = y_hat.detach().cpu().numpy()
+        y = y.detach().cpu().numpy()
+        plt.figure()
+        plt.title("Phase sample")
+        plt.hist(y_1_ISI[:,:,0::2].flatten(), 20, alpha=1, label='ideal DD')
+        plt.hist(y[:,:,0::2].flatten(), 200, alpha=0.5, label='DD out')
+        plt.hist(y_hat.flatten(), 200, alpha=0.5, label='CNN out')
+        plt.ylim(0,2e4)
+        plt.legend(loc='upper right')
+        lr_str = f"{lr:}".replace('.', 'p')
+        alpha_str = f"{alpha:.1f}".replace('.', 'p')
+        plt.savefig(f"{folder_path}/lr{lr_str}_Llink{L_link*1e-3:.0f}km_alpha{alpha_str}_{SNR_dB}dB.png")
+        plt.close()
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("We are using the following device for learning:",device)
@@ -96,8 +98,11 @@ N_taps = 41
 R_sym = 35e9
 beta2 = -2.168e-26
 alpha_steps = np.arange(0,1)               # for sweep over alpha
+alpha_save_fig = alpha_steps
 L_link_steps = np.arange(0,35,10)*1e3      # for sweep over L_link
+L_link_save_fig = L_link_steps
 SNR_dB_steps = np.arange(30,51,5)                          # for sweep over SNR
+SNR_save_fig = SNR_dB_steps[[2,]]
 
 ### CNN definition
 num_ch = [1,6,8,3,1]
@@ -109,7 +114,8 @@ activ_func = torch.nn.ELU()
 batches_per_epoch = 300
 batch_size_per_epoch = [100, 300, 500]
 N_sym = 1000
-lr_steps = [0.0005, 0.0007, 0.001, 0.002, 0.003, 0.005]                               # for sweep over lr
+lr_steps = np.array([0.0005, 0.0007, 0.001, 0.002, 0.003, 0.005])       # for sweep over lr
+lr_save_fig = lr_steps[[4,]]
 
 checkpoint_per_epoch = 20
 
