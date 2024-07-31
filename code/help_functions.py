@@ -232,7 +232,7 @@ def abs_phase_diff(x, dim=-1):
     Returns:
     signal (tensor of size ((batch_size, 1, N_sym))
     '''
-    return torch.abs(torch.diff(torch.angle(x)))
+    return torch.remainder(torch.abs(torch.diff(torch.angle(x))),torch.pi)
 
 def get_ER(Tx, Rx, tol=1e-5):
     ''' Calculate the error rate between Tx and Rx with a given tolerance, that means count
@@ -256,13 +256,13 @@ def min_distance_dec(alphabet, Rx):
     hard_dec_idx = torch.argmin(torch.abs(alphabet - Rx[...,None]), dim=-1)
     return alphabet[hard_dec_idx]
 
-def decode_and_ER(Tx, Rx, precision=10):
+def decode_and_ER(Tx, Rx, precision=5):
     ''' Decodes under minimum distance criteria and calculates the error rate between Tx and Rx
 
     Arguments:
     Tx:         noiseless transmitted symbols (the alphabet is computed from Tx ass all different values that Tx take, that is why Tx must be noiseless)
     Rx:         received symbols (same size as Tx)
-    precision:  number of decimals used to determine the alphabet in the rounding process
+    precision:  number of decimals used to determine the alphabet in the rounding process (default=5)
     '''
     alphabet = torch.unique(torch.round(torch.flatten(Tx), decimals=precision))
     Rx_deco = min_distance_dec(alphabet, Rx)
