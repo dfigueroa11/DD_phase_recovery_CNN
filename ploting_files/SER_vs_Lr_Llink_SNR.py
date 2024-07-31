@@ -3,8 +3,9 @@ import matplotlib.pyplot as plt
 import matplotlib.axes
 import re
 
-
-file_path = '/Users/diegofigueroa/Desktop/results/ASK2_phase/SER_results.txt'
+folders = ["ASK2_phase", "ASK4_phase", "QAM4_phase", "DDQAM4_phase", "PAM2_mag", "PAM4_mag", "ASK4_mag", "ASK2_phase_diff"]
+folder = folders[0]
+file_path = f"/Users/diegofigueroa/Desktop/results/{folder}/SER_results.txt"
 data = []
 with open(file_path, 'r') as file:
     lines = file.readlines()
@@ -34,28 +35,6 @@ for j, (lr, ax) in enumerate(zip(lr_list, axs.flat)):
     ax.set_ylim((1e-5,1))
     ax.grid(True)
 
-fig, axs = plt.subplots(2,3)
-for j, (lr, ax) in enumerate(zip(lr_list, axs.flat)):
-    ax.set_title(f"Lr={lr} -- alpha={alpha_list[0]}")
-    for i, snr in enumerate(SNR_list):
-        ax.semilogy(Llink_list, SER_data[j,:,0,i], marker='o', label=f"SNR={snr} dB")
-    ax.legend()
-    ax.set_xlabel("link length [km]")
-    ax.set_ylabel("SER")
-    ax.set_ylim((1e-5,1))
-    ax.grid(True)
-
-fig, axs = plt.subplots(2,2)
-for j, (llink, ax) in enumerate(zip(Llink_list, axs.flat)):
-    ax.set_title(f"L_link={llink}km -- alpha={alpha_list[0]}")
-    for i, snr in enumerate(SNR_list):
-        ax.semilogy(lr_list, SER_data[:,j,0,i], marker='o', label=f"SNR={snr} dB")
-    ax.legend()
-    ax.set_xlabel("learning rate")
-    ax.set_ylabel("SER")
-    ax.set_ylim((1e-5,1))
-    ax.grid(True)
-
 fig, axs = plt.subplots(2,2)
 for j, (llink, ax) in enumerate(zip(Llink_list, axs.flat)):
     ax.set_title(f"L_link={llink}km -- alpha={alpha_list[0]}")
@@ -63,6 +42,17 @@ for j, (llink, ax) in enumerate(zip(Llink_list, axs.flat)):
         ax.semilogy(SNR_list, SER_data[i,j,0,:], marker='o', label=f"Lr={lr}")
     ax.legend()
     ax.set_xlabel("SNR [dB]")
+    ax.set_ylabel("SER")
+    ax.set_ylim((1e-5,1))
+    ax.grid(True)
+
+fig, axs = plt.subplots(2,3)
+for j, (lr, ax) in enumerate(zip(lr_list, axs.flat)):
+    ax.set_title(f"Lr={lr} -- alpha={alpha_list[0]}")
+    for i, snr in enumerate(SNR_list):
+        ax.semilogy(Llink_list, SER_data[j,:,0,i], marker='o', label=f"SNR={snr} dB")
+    ax.legend()
+    ax.set_xlabel("link length [km]")
     ax.set_ylabel("SER")
     ax.set_ylim((1e-5,1))
     ax.grid(True)
@@ -89,6 +79,16 @@ for j, (snr, ax) in enumerate(zip(SNR_list, axs.flat)):
     ax.set_ylim((1e-5,1))
     ax.grid(True)
 
+fig, axs = plt.subplots(2,2)
+for j, (llink, ax) in enumerate(zip(Llink_list, axs.flat)):
+    ax.set_title(f"L_link={llink}km -- alpha={alpha_list[0]}")
+    for i, snr in enumerate(SNR_list):
+        ax.semilogy(lr_list, SER_data[:,j,0,i], marker='o', label=f"SNR={snr} dB")
+    ax.legend()
+    ax.set_xlabel("learning rate")
+    ax.set_ylabel("SER")
+    ax.set_ylim((1e-5,1))
+    ax.grid(True)
 
 plt.show()
 
