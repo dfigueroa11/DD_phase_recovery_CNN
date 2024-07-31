@@ -12,7 +12,7 @@ class DD_system():
     simulate_transmission(batch_size, N_sym, SNR_dB)
     '''
 
-    def __init__(self, N_os, N_sim, constellation, diff_encoder, pulse_shape, ch_imp_resp, rx_filt):
+    def __init__(self, N_os, N_sim, constellation, diff_encoder, pulse_shape, ch_imp_resp, rx_filt, device):
         '''
         Arguments:
             N_os:           oversampling factor of the physical system (integer)
@@ -22,17 +22,19 @@ class DD_system():
             pulse_shape:    taps pulse shaping FIR filter (1D tensor with odd length)
             ch_imp_resp:   taps of the channel impulse response (1D tensor with length equal to pulse_shape)
             rx_filt:        taps of the receiver FIR filter (1D tensor with odd length)
+            device:         the device to use (cpu or cuda)
         '''
+        self.device = device
         self.N_os = N_os
         self.N_sim = N_sim
         self.d = N_sim//N_os
-        self.constellation = constellation
+        self.constellation = constellation.to(device)
         self.diff_encoder = diff_encoder
         if pulse_shape is not None and ch_imp_resp is not None:
-            self.tx_filt = hlp.norm_filt(N_sim, hlp.cascade_filters(pulse_shape, ch_imp_resp)).view(1,1,-1)
+            self.tx_filt = hlp.norm_filt(N_sim, hlp.cascade_filters(pulse_shape, ch_imp_resp)).view(1,1,-1).to(device)
         else:
             self.tx_filt = None
-        self.rx_filt = hlp.norm_filt(N_sim, rx_filt).view(1,1,-1)
+        self.rx_filt = hlp.norm_filt(N_sim, rx_filt).view(1,1,-1).to(device)
 
     def simulate_transmission(self, batch_size, N_sym, SNR_dB):
         ''' Simulates the transmission of B batches and N symbols per batch with the given SNR 
@@ -53,9 +55,9 @@ class DD_system():
             x = self.diff_encoder.encode(u)
         else:
             x = u
-        x_up = torch.kron(x,torch.eye(self.N_sim)[-1])
+        x_up = torch.kron(x,torch.eye(self.N_sim, device=self.device)[-1])
         z = torch.square(torch.abs(hlp.convolve(x_up, self.tx_filt)))
-        var_n = torch.tensor([self.N_sim/SNR_lin], dtype=torch.float32)
+        var_n = torch.tensor([self.N_sim/SNR_lin], dtype=torch.float32, device=self.device)
         y = z + torch.sqrt(var_n)*torch.randn_like(z)
         y = hlp.convolve(y, self.rx_filt)
         return u, x, y[:,:,self.d-1::self.d]

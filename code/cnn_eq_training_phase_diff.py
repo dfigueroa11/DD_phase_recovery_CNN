@@ -21,7 +21,7 @@ def create_results_folder(path,n_copy):
         return create_results_folder(path,n_copy)
 
 def initialize_dd_system():
-    return hlp.set_up_DD_system(N_os=N_os, N_sim=N_sim,
+    return hlp.set_up_DD_system(N_os=N_os, N_sim=N_sim, device=device,
                                 mod_format=mod_format, M=M, sqrt_flag=False,
                                 diff_encoder=False,
                                 N_taps=N_taps,
@@ -30,6 +30,7 @@ def initialize_dd_system():
 
 def initialize_CNN_optimizer(lr):
     cnn_equalizer = CNN_equalizer.CNN_equalizer(num_ch, ker_lens, strides, activ_func)
+    cnn_equalizer.to(device)
     optimizer = optim.Adam(cnn_equalizer.parameters(), eps=1e-07, lr=lr)
     return cnn_equalizer, optimizer
 
@@ -64,6 +65,7 @@ def eval_n_save_CNN():
     print(f"\tfinal SER: {SER:.3e}")
     phase_diff = phase_diff.detach().cpu().numpy()
     y_hat = y_hat.detach().cpu().numpy()
+    y = y.detach().cpu().numpy()
 
     plt.figure()
     plt.title("Phase sample")

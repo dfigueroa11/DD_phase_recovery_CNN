@@ -32,15 +32,17 @@ class Differential_encoder():
     diff_mapping = [[1,0],[0,1]] 
     '''
 
-    def __init__(self, constellation, diff_mapping):
+    def __init__(self, constellation, diff_mapping, device):
         '''
         Arguments:
         constellation:  constellation alphabet containing the possible symbols (1D tensor)
         diff_mapping:   square matrix describing the differential encoding (2D tensor ptype int)
+        device:         the device to use (cpu or cuda)
         '''
-        self.constellation = constellation
-        self.diff_mapping = diff_mapping
-        self.phase_list = torch.unique(torch.round(torch.angle(constellation), decimals=10)).view(-1,1)
+        self.device= device
+        self.constellation = constellation.to(device)
+        self.diff_mapping = diff_mapping.to(device)
+        self.phase_list = torch.unique(torch.round(torch.angle(constellation), decimals=10)).view(-1,1).to(device)
         
     def encode(self, u, x0_phase_idx=0): 
         '''

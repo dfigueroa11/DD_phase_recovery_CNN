@@ -65,12 +65,13 @@ def common_constellation(mod, M, dtype=torch.cfloat, sqrt_flag=False):
     constellation = constellation / np.sqrt(np.mean(np.abs(constellation) ** 2))
     return torch.tensor(constellation, dtype=dtype)
 
-def common_diff_encoder(mod, constellation):
+def common_diff_encoder(mod, constellation, device):
     '''Returns the constellation specified (1D tensor of size M)
 
     Arguments:
     mod:            String with the modulation format, valid options are 'PAM', 'ASK', 'SQAM', 'QAM' or 'DDQAM'
     constellation:  constellation:  constellation to be used (1D tensor)
+    device:         the device to use (cpu or cuda)
     '''
     if mod == "PAM":
         return None
@@ -84,7 +85,7 @@ def common_diff_encoder(mod, constellation):
         diff_mapping = torch.tensor([[1,0,3,2],[0,1,2,3],[3,2,1,0],[2,3,0,1]])
     else:
         raise ValueError("mod should be PAM, ASK, SQAM, QAM or DDQAM")
-    return Differential_encoder.Differential_encoder(constellation, diff_mapping)
+    return Differential_encoder.Differential_encoder(constellation, diff_mapping, device)
 
 def rcos_filt(alpha, N_taps, fs, sym_time, dtype=torch.cfloat):
     ''' Returns a raised cosine filter (1D tensor of length N_taps)
@@ -151,13 +152,14 @@ def filt_windowing(filt, energy_criteria=99):
         energy_w = torch.sum(torch.abs(filt_w)**2)
     return filt_w, 2*n+1
 
-def set_up_DD_system(N_os, N_sim, **kwargs):
+def set_up_DD_system(N_os, N_sim, device, **kwargs):
     '''Returns a DD_system with the given configuration for common constellations,
     pulse shapes, channel impulse response and receiver filter
 
     Arguments:
     N_os:   oversampling factor of the physical system (integer)
     N_sim:  oversampling factor used during the simulation to avoid aliasing (integer multiple of N_os)
+    device: the device to use (cpu or cuda)
 
     kwargs:
     mod_format:     constellation type (string: PAM, ASK, SQAM, QAM or DDQAM)
@@ -186,7 +188,7 @@ def set_up_DD_system(N_os, N_sim, **kwargs):
             constellation = common_constellation(kwargs["mod_format"], kwargs["M"])
         if "diff_encoder" in kwargs.keys():
             if kwargs["diff_encoder"]:
-                diff_encoder = common_diff_encoder(kwargs["mod_format"], constellation)
+                diff_encoder = common_diff_encoder(kwargs["mod_format"], constellation, device)
     elif "constellation" in kwargs.keys():
         constellation = kwargs["constellation"]    
     if {"alpha", "N_taps"} <= kwargs.keys():
@@ -204,7 +206,7 @@ def set_up_DD_system(N_os, N_sim, **kwargs):
         rx_filt = rcos_filt(0, len(pulse_shape), N_sim, 1/2, dtype=torch.float32)
     else:
         rx_filt = torch.tensor([1.])
-    return DD_system.DD_system(N_os, N_sim, constellation , diff_encoder, pulse_shape, ch_imp_resp, rx_filt)
+    return DD_system.DD_system(N_os, N_sim, constellation , diff_encoder, pulse_shape, ch_imp_resp, rx_filt, device)
 
 def DD_1sym_ISI(x, h0=1, h1=1/2):
     '''Apply ideal DD for a channel with one symbol ISI, with Tx_filter = [h1, h0, h1]
