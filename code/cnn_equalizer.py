@@ -6,19 +6,23 @@ class CNN_equalizer(nn.Module):
     Class implementing the CNN equalizer
     '''
     
-    def __init__(self, num_ch, ker_lens, strides, activ_func):
+    def __init__(self, num_ch, ker_lens, strides, activ_func, groups_list=None):
         '''
         Arguments:
-        num_ch:     list with the number of input channels of each layer and number of output channel of the last layer 
-                    so CNN channels behave as: num_ch[0] -> conv1d -> num_ch[1] -> ... -> conv1d -> num_ch[-1] (list of length L-1)
-        ker_lens:   list with the length of the kernel of each layer (list of length L, each number should be odd)
-        strides:    list with the stride of each layer (list of length L)
-        activ_func: activation function applied after each layer, except the last one
+        num_ch:         list with the number of input channels of each layer and number of output channel of the last layer 
+                        so CNN channels behave as: num_ch[0] -> conv1d -> num_ch[1] -> ... -> conv1d -> num_ch[-1] (list of length L-1)
+        ker_lens:       list with the length of the kernel of each layer (list of length L, each number should be odd)
+        strides:        list with the stride of each layer (list of length L)
+        activ_func:     activation function applied after each layer, except the last one
+        groups_list:    groups applied to each layer of the CNN (list of length L, default: list of ones)
         '''
         super().__init__()
+        if groups_list is None:
+            groups_list = [1]*len(ker_lens)
+
         self.conv_layers = nn.ModuleList()
-        for ch_in, ch_out, ker_len, stride in zip(num_ch[:-1], num_ch[1:], ker_lens, strides):
-            self.conv_layers.append(nn.Conv1d(ch_in, ch_out, ker_len, stride, (ker_len-1)//2))
+        for ch_in, ch_out, ker_len, stride, groups in zip(num_ch[:-1], num_ch[1:], ker_lens, strides, groups_list):
+            self.conv_layers.append(nn.Conv1d(ch_in, ch_out, ker_len, stride, (ker_len-1)//2, groups=groups))
         self.activ_func = activ_func
 
     def forward(self, y):
