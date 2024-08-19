@@ -51,7 +51,7 @@ def train_CNN():
             optimizer.zero_grad()
             loss_evolution.append(loss.detach().cpu().numpy())
             if (i+1)%(batches_per_epoch//checkpoint_per_epoch) == 0:
-                SER = hlp.decode_and_ER(y_1_ISI[:,:,1::2].detach().cpu(),y_hat.detach().cpu())
+                _, SER = hlp.decode_and_ER(y_1_ISI[:,:,1::2].detach().cpu(),y_hat.detach().cpu())
                 print(f"\tBatch size {batch_size:_}\tprogress {(i+1)/batches_per_epoch:>6.1%}\t loss: {loss_evolution[-1]:.3e}\t SER: {SER:.3e}",end='\r')
         print()
 
@@ -61,23 +61,23 @@ def eval_n_save_CNN():
     y_hat = cnn_equalizer(y)
 
     y_1_ISI = hlp.DD_1sym_ISI(x,dd_system.tx_filt[0,0,N_taps//2],dd_system.tx_filt[0,0,N_taps//2+1])*torch.max(dd_system.rx_filt)
-    SER = hlp.decode_and_ER(y_1_ISI[:,:,1::2],y_hat)
+    alphabet, SER = hlp.decode_and_ER(y_1_ISI[:,:,1::2],y_hat)
     print(f"\tfinal SER: {SER:.3e}")
     
     with open(f"{folder_path}/SER_results.txt", 'a') as file:
         file.write(f"lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB}dB --> SER:{SER:.10e}\n")
     
     if SNR_dB in SNR_save_fig and lr in lr_save_fig and L_link in L_link_save_fig and alpha in alpha_save_fig:
-        y_1_ISI = y_1_ISI.detach().cpu().numpy()
         y_hat = y_hat.detach().cpu().numpy()
         y = y.detach().cpu().numpy()
         plt.figure()
         plt.title("Magnitude sample")
-        plt.hist(y_1_ISI[:,:,1::2].flatten(), 20, alpha=1, label='ideal DD',)
-        plt.hist(y[:,:,1::2].flatten(), 200, alpha=0.5, label='DD out')
-        plt.hist(y_hat.flatten(), 200, alpha=0.5, label='CNN out')
+        for val in alphabet.detach().cpu().numpy():
+            line = plt.axvline(x=val, color='red', linestyle='--')
+        _, _, hist1 = plt.hist(y[:,:,1::2].flatten(), 200, alpha=0.5, label='DD out')
+        _, _, hist2 = plt.hist(y_hat.flatten(), 200, alpha=0.5, label='CNN out')
         plt.ylim(0,2e4)
-        plt.legend(loc='upper right')
+        plt.legend([line, hist1[0], hist2[0]],['ideal odd sample', 'DD out', 'CNN out'], loc='upper right')
         lr_str = f"{lr:}".replace('.', 'p')
         alpha_str = f"{alpha:.1f}".replace('.', 'p')
         plt.savefig(f"{folder_path}/lr{lr_str}_Llink{L_link*1e-3:.0f}km_alpha{alpha_str}_{SNR_dB}dB.png")
