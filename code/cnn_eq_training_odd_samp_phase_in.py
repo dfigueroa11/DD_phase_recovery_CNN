@@ -99,7 +99,7 @@ R_sym = 35e9
 beta2 = -2.168e-26
 alpha_steps = np.arange(0,1)               # for sweep over alpha
 alpha_save_fig = alpha_steps
-L_link_steps = np.arange(0,35,10)*1e3      # for sweep over L_link
+L_link_steps = np.arange(0,35,6)*1e3      # for sweep over L_link
 L_link_save_fig = L_link_steps
 SNR_dB_steps = np.arange(5,26,5)                          # for sweep over SNR
 SNR_save_fig = SNR_dB_steps[[2,-1]]
@@ -114,7 +114,7 @@ activ_func = torch.nn.ELU()
 batches_per_epoch = 300
 batch_size_per_epoch = [100, 300, 500]
 N_sym = 1000
-lr_steps = np.array([0.0005, 0.0007, 0.001, 0.002, 0.003, 0.005])       # for sweep over lr
+lr_steps = np.array([0.0007, 0.001, 0.003, 0.005])       # for sweep over lr
 lr_save_fig = lr_steps[[4,]]
 
 checkpoint_per_epoch = 20
