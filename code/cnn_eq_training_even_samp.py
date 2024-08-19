@@ -119,7 +119,7 @@ lr_save_fig = lr_steps[[4,]]
 
 checkpoint_per_epoch = 20
 
-folder_path = create_results_folder(f"results/{mod_format}{M:}_phase",0)
+folder_path = create_results_folder(f"results/{mod_format}{M:}_even_samp",0)
 for lr in lr_steps:
     for L_link in L_link_steps:
         for alpha in alpha_steps:
