@@ -74,9 +74,8 @@ def eval_n_save_CNN():
         plt.title("Phase sample")
         for val in alphabet.detach().cpu().numpy():
             line = plt.axvline(x=val, color='red', linestyle='--')
-        _, _, hist1 = plt.hist(y[:,:,0::2].flatten(), 200, alpha=0.5, label='DD out')
-        _, _, hist2 = plt.hist(y_hat.flatten(), 200, alpha=0.5, label='CNN out')
-        plt.ylim(0,2e4)
+        _, _, hist1 = plt.hist(y[:,:,0::2].flatten(), 200, alpha=0.5, density=True)
+        _, _, hist2 = plt.hist(y_hat.flatten(), 200, alpha=0.5, density=True)
         plt.legend([line, hist1[0], hist2[0]],['ideal even sample', 'DD out', 'CNN out'], loc='upper right')
         lr_str = f"{lr:}".replace('.', 'p')
         alpha_str = f"{alpha:.1f}".replace('.', 'p')
@@ -101,8 +100,8 @@ alpha_steps = np.arange(0,1)               # for sweep over alpha
 alpha_save_fig = alpha_steps
 L_link_steps = np.arange(0,35,10)*1e3      # for sweep over L_link
 L_link_save_fig = L_link_steps
-SNR_dB_steps = np.arange(30,51,5)                          # for sweep over SNR
-SNR_save_fig = SNR_dB_steps[[2,]]
+SNR_dB_steps = np.arange(5,26,5)                          # for sweep over SNR
+SNR_save_fig = SNR_dB_steps[[2,-1]]
 
 ### CNN definition
 num_ch = [1,6,8,3,1]
