@@ -265,10 +265,13 @@ def decode_and_ER(Tx, Rx, precision=5):
     Tx:         noiseless transmitted symbols (the alphabet is computed from Tx ass all different values that Tx take, that is why Tx must be noiseless)
     Rx:         received symbols (same size as Tx)
     precision:  number of decimals used to determine the alphabet in the rounding process (default=5)
+
+    Return:
+    decoding alphabet (1D tensor), error rate
     '''
     alphabet = torch.unique(torch.round(torch.flatten(Tx), decimals=precision))
     Rx_deco = min_distance_dec(alphabet, Rx)
-    return get_ER(Tx,Rx_deco)
+    return alphabet, get_ER(Tx,Rx_deco)
 
 def analyse_channel_length(N_os, N_sim, N_taps, alpha, L_link, R_sym, beta2=-2.168e-26, energy_criteria = 99):
     ''' Function to determine the number of required taps for the channel filter, assuming a raised cosine and a chromatic dispersion channel
