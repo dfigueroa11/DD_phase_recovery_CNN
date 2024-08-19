@@ -5,7 +5,11 @@ __pycache__/
 
 # apple files
 .DS_Store
+# vscode files
 .vscode
+
+# replace script 
+/results
 # C extensions
 *.so
 
