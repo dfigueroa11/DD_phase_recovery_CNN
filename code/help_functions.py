@@ -234,7 +234,7 @@ def abs_phase_diff(x, dim=-1):
     Returns:
     signal (tensor of size ((batch_size, 1, N_sym))
     '''
-    return torch.remainder(torch.abs(torch.diff(torch.angle(x))),torch.pi)
+    return torch.abs(torch.remainder(torch.abs(torch.diff(torch.angle(x))+torch.pi),2*torch.pi)-torch.pi)
 
 def get_ER(Tx, Rx, tol=1e-5):
     ''' Calculate the error rate between Tx and Rx with a given tolerance, that means count
