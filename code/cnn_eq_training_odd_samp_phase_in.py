@@ -115,7 +115,7 @@ batches_per_epoch = 300
 batch_size_per_epoch = [100, 300, 500]
 N_sym = 1000
 lr_steps = np.array([0.0007, 0.001, 0.003, 0.005])       # for sweep over lr
-lr_save_fig = lr_steps[[4,]]
+lr_save_fig = lr_steps[[2,]]
 
 checkpoint_per_epoch = 20
 

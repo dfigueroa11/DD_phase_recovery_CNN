@@ -12,8 +12,8 @@ python3.11 cnn_eq_training_phase.py "QAM" 4
 python3.11 cnn_eq_training_phase.py "DDQAM" 4
 
 #####################################
-python3.11 cnn_eq_training_phase_diff.py "ASK" 4
-python3.11 cnn_eq_training_phase_diff.py "DDQAM" 8
+python3.11 cnn_eq_training_phase_diff_mag_in.py "ASK" 4
+python3.11 cnn_eq_training_phase_diff_mag_in.py "DDQAM" 8
 
 #####################################
 python3.11 cnn_eq_training_odd_samp.py "PAM" 2
