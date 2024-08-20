@@ -41,9 +41,9 @@ def train_CNN():
     for batch_size in batch_size_per_epoch:
         for i in range(batches_per_epoch):
             _, x, y = dd_system.simulate_transmission(batch_size, N_sym, SNR_dB)
-            phase_diff = torch.cat((torch.zeros((x.size(0),x.size(1),1)),hlp.abs_phase_diff(x)),-1)
+            phase_diff = torch.cat((torch.zeros((x.size(0),x.size(1),1), device=device),hlp.abs_phase_diff(x)),-1)
             y_hat = cnn_equalizer(torch.cat((y,torch.kron(phase_diff,torch.eye(N_sim, device=device)[-1])), dim=1))
-            y_1_ISI = hlp.DD_1sym_ISI(x,dd_system.tx_filt[0,0,N_taps//2],dd_system.tx_filt[0,0,N_taps//2+1])*torch.max(dd_system.rx_filt)
+            y_1_ISI = hlp.DD_1sym_ISI(x,dd_system.tx_filt[0,0,N_taps//2],dd_system.tx_filt[0,0,N_taps//2+1], device=device)*torch.max(dd_system.rx_filt)
             loss = loss_func(y_1_ISI[:,:,1::2], y_hat)
             
             loss.backward()
@@ -58,10 +58,10 @@ def train_CNN():
 def eval_n_save_CNN():
     _, x, y = dd_system.simulate_transmission(100, N_sym, SNR_dB)
     cnn_equalizer.eval()
-    phase_diff = torch.cat((torch.zeros((x.size(0),x.size(1),1)),hlp.abs_phase_diff(x)),-1)
+    phase_diff = torch.cat((torch.zeros((x.size(0),x.size(1),1), device=device),hlp.abs_phase_diff(x)),-1)
     y_hat = cnn_equalizer(torch.cat((y,torch.kron(phase_diff,torch.eye(N_sim, device=device)[-1])), dim=1))
             
-    y_1_ISI = hlp.DD_1sym_ISI(x,dd_system.tx_filt[0,0,N_taps//2],dd_system.tx_filt[0,0,N_taps//2+1])*torch.max(dd_system.rx_filt)
+    y_1_ISI = hlp.DD_1sym_ISI(x,dd_system.tx_filt[0,0,N_taps//2],dd_system.tx_filt[0,0,N_taps//2+1], device=device)*torch.max(dd_system.rx_filt)
     alphabet, SER = hlp.decode_and_ER(y_1_ISI[:,:,1::2],y_hat)
     print(f"\tfinal SER: {SER:.3e}")
     
