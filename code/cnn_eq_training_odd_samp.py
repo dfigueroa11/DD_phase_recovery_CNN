@@ -22,7 +22,7 @@ def create_results_folder(path,n_copy):
 
 def initialize_dd_system():
     return hlp.set_up_DD_system(N_os=N_os, N_sim=N_sim, device=device,
-                                mod_format=mod_format, M=M, sqrt_flag=False,
+                                mod_format=mod_format, M=M, sqrt_flag=True,
                                 diff_encoder=False,
                                 N_taps=N_taps,
                                 alpha=alpha,
@@ -104,9 +104,9 @@ SNR_dB_steps = np.arange(5,26,5)                          # for sweep over SNR
 SNR_save_fig = SNR_dB_steps[[2,-1]]
 
 ### CNN definition
-num_ch = [1,6,8,3,1]
-ker_lens = [21,15,9,9]
-strides = [1,1,1,2]
+num_ch = [1,15,7,1]
+ker_lens = [11,11,7]
+strides = [1,1,2]
 activ_func = torch.nn.ELU()
 
 ### Training hyperparameter
