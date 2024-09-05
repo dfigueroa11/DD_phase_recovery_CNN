@@ -227,12 +227,12 @@ def DD_1sym_ISI(x, h0=1, h1=1/2, device='cpu'):
     y_1sym_ISI[:,:,0::2] = torch.square(torch.abs(h1*x+h1*torch.roll(x, 1, dims=-1)))
     return y_1sym_ISI
 
-def create_ideal_y(u, multi_mag, multi_phase, h0=1):
+def create_ideal_y(u, multi_mag, multi_phase, h0=1, h_rx=1):
     if not multi_mag:
         return torch.angle(u)
     if not multi_phase:
         return torch.square(torch.abs(h0*u))
-    return torch.cat((torch.square(torch.abs(h0*u)),torch.angle(u)), dim=1)
+    return torch.cat((torch.square(torch.abs(h0*u))*h_rx,torch.angle(u)), dim=1)
 
 def abs_phase_diff(x, dim=-1):
     '''Computes the phase difference between adjacent symbols
@@ -321,28 +321,48 @@ def print_save_summary(y_ideal, y_hat, multi_mag, multi_phase, lr, L_link, alpha
         alphabet_phase, phase_ER = decode_and_ER(y_ideal[:,1,:], y_hat[:,1,:])
         alphabet, SER = decode_and_ER_mag_phase(y_ideal, y_hat)
         print(f"\tmag ER: {mag_ER:.3e}\tphase ER: {phase_ER:.3e}\tSER: {SER:.3e}")
+        alphabets = [alphabet_mag, alphabet_phase, alphabet]
+        SERs = [mag_ER, phase_ER, SER]
     else:
         alphabet, SER = decode_and_ER(y_ideal, y_hat)
         print(f"\tSER: {SER:.3e}")
+        alphabets = [alphabet]
+        SERs = [SER]
     
     with open(path, 'a') as file:
         if multi_mag and multi_phase:    
             file.write(f"lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB}dB --> mag ER:{mag_ER:.10e}, phase ER:{phase_ER:.10e}, SER: {SER:.10e}")
         else:
             file.write(f"lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB}dB --> SER:{SER:.10e}\n")
+    return alphabets, SERs
 
 def save_fig_summary(y, y_hat, multi_mag, multi_phase, alphabets, folder_path, lr, L_link, alpha, SNR_dB,):
-        ax: matplotlib.axes.Axes
         if multi_mag and multi_phase:
-            fig, (ax,_,_) = plt.subplots(1, 3, figsize=(15,9))
-            ax.set_title("Magnitude sample")
-            ax.scatter(np.real(alphabets[0]), np.imag(alphabets[0]), c='r', label='ideal')
+            fig, (ax1,ax2,ax3) = plt.subplots(1, 3, figsize=(15,9))
+            ax1.set_title("Constellation diagram")
             y_hat_comp = mag_phase_2_complex(y_hat)
-            ax.scatter(np.real(y_hat_comp), np.imag(y_hat_comp), c='r', label='CNN out')
-            ax.legend(loc='upper right')
-            lr_str = f"{lr:}".replace('.', 'p')
-            alpha_str = f"{alpha:.1f}".replace('.', 'p')
-            plt.show
+            ax1.scatter(np.real(y_hat_comp), np.imag(y_hat_comp), c='b', alpha=0.1, label='CNN out')
+            ax1.scatter(np.real(alphabets[2]), np.imag(alphabets[2]), c='r', label='ideal')
+            ax1.legend(loc='upper right')
+            ax1.grid()
+
+            ax2.set_title("Magnitude")
+            for val in alphabets[0].detach().cpu().numpy():
+                line = ax2.axvline(x=val, color='red', linestyle='--')
+            _, _, hist1 = ax2.hist(y[:,:,1::2].flatten(), 200, alpha=0.5, density=True)
+            _, _, hist2 = ax2.hist(y_hat[:,0,1:].flatten(), 200, alpha=0.5, density=True)
+            ax2.legend([line, hist1[0], hist2[0]],['ideal mag', 'DD out', 'CNN out'], loc='upper right')
+            ax2.grid()
+
+            ax3.set_title("Phase difference")
+            for val in alphabets[1].detach().cpu().numpy():
+                line = ax3.axvline(x=val, color='red', linestyle='--')
+            _, _, hist1 = ax3.hist(y[:,:,0::2].flatten(), 200, alpha=0.5, density=True)
+            _, _, hist2 = ax3.hist(y_hat[:,0,1:].flatten(), 200, alpha=0.5, density=True)
+            ax3.legend([line, hist1[0], hist2[0]],['ideal phase', 'DD out', 'CNN out'], loc='upper right')
+            ax3.grid()
+
+            plt.show()
 
 
 
