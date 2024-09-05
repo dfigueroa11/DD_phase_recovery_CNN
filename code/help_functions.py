@@ -1,6 +1,8 @@
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
+import matplotlib.axes
+
 from torch.nn.functional import conv1d
 
 import DD_system
@@ -76,7 +78,7 @@ def common_diff_encoder(mod, constellation, device):
     if mod == "PAM":
         return None
     elif mod == "ASK":
-        diff_mapping = torch.tensor([[1,0],[0,1]])
+        diff_mapping = torch.tensor([[0,1],[1,0]])
     elif mod == "SQAM":
         diff_mapping = torch.tensor([[3,0,1,2],[0,1,2,3],[1,2,3,0],[2,3,0,1]])
     elif mod == "QAM":
@@ -225,6 +227,13 @@ def DD_1sym_ISI(x, h0=1, h1=1/2, device='cpu'):
     y_1sym_ISI[:,:,0::2] = torch.square(torch.abs(h1*x+h1*torch.roll(x, 1, dims=-1)))
     return y_1sym_ISI
 
+def create_ideal_y(u, multi_mag, multi_phase, h0=1):
+    if not multi_mag:
+        return torch.angle(u)
+    if not multi_phase:
+        return torch.square(torch.abs(h0*u))
+    return torch.cat((torch.square(torch.abs(h0*u)),torch.angle(u)), dim=1)
+
 def abs_phase_diff(x, dim=-1):
     '''Computes the phase difference between adjacent symbols
     
@@ -273,6 +282,82 @@ def decode_and_ER(Tx, Rx, precision=5):
     alphabet = torch.unique(torch.round(torch.flatten(Tx), decimals=precision))
     Rx_deco = min_distance_dec(alphabet, Rx)
     return alphabet, get_ER(Tx,Rx_deco)
+
+def decode_and_ER_mag_phase(Tx, Rx, precision=5):
+    ''' Decodes under minimum distance criteria and calculates the error rate between Tx and Rx
+
+    Arguments:
+    Tx:         noiseless transmitted symbols (the alphabet is computed from Tx ass all different values that Tx take, that is why Tx must be noiseless)
+    Rx:         received symbols (same size as Tx)
+    precision:  number of decimals used to determine the alphabet in the rounding process (default=5)
+
+    Return:
+    decoding alphabet (1D tensor), error rate
+    '''
+    alphabet_mag = torch.unique(torch.round(torch.flatten(Tx[:,0,:]), decimals=precision))
+    alphabet_phase = torch.unique(torch.round(torch.flatten(Tx[:,1,:]), decimals=precision))
+    alphabet = (alphabet_mag*torch.exp(1j*alphabet_phase)[...,None]).flatten()
+    Tx = mag_phase_2_complex(Tx)
+    Rx = mag_phase_2_complex(Rx)
+    Rx_deco = min_distance_dec(alphabet, Rx)
+    return alphabet, get_ER(Tx,Rx_deco)
+
+def mag_phase_2_complex(x):
+    return x[:,0,:]*torch.exp(1j*x[:,1,:])
+
+def print_progress(y_ideal, y_hat, batch_size, progress, loss, multi_mag, multi_phase):
+    if multi_mag and multi_phase:
+        _, mag_ER = decode_and_ER(y_ideal[:,0,:], y_hat[:,0,:])
+        _, phase_ER = decode_and_ER(y_ideal[:,1,:], y_hat[:,1,:])
+        _, SER = decode_and_ER_mag_phase(y_ideal, y_hat)
+        print(f"\tBatch size {batch_size:_}\tprogress {progress:>6.1%}\tloss: {loss:.3e}\tmag ER: {mag_ER:.3e}\tphase ER: {phase_ER:.3e}\tSER: {SER:.3e}",end='\r')
+    else:
+        _, SER = decode_and_ER(y_ideal, y_hat)
+        print(f"\tBatch size {batch_size:_}\tprogress {progress:>6.1%}\tloss: {loss:.3e}\tSER: {SER:.3e}",end='\r')
+
+def print_save_summary(y_ideal, y_hat, multi_mag, multi_phase, lr, L_link, alpha, SNR_dB, path):
+    if multi_mag and multi_phase:
+        alphabet_mag, mag_ER = decode_and_ER(y_ideal[:,0,:], y_hat[:,0,:])
+        alphabet_phase, phase_ER = decode_and_ER(y_ideal[:,1,:], y_hat[:,1,:])
+        alphabet, SER = decode_and_ER_mag_phase(y_ideal, y_hat)
+        print(f"\tmag ER: {mag_ER:.3e}\tphase ER: {phase_ER:.3e}\tSER: {SER:.3e}")
+    else:
+        alphabet, SER = decode_and_ER(y_ideal, y_hat)
+        print(f"\tSER: {SER:.3e}")
+    
+    with open(path, 'a') as file:
+        if multi_mag and multi_phase:    
+            file.write(f"lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB}dB --> mag ER:{mag_ER:.10e}, phase ER:{phase_ER:.10e}, SER: {SER:.10e}")
+        else:
+            file.write(f"lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB}dB --> SER:{SER:.10e}\n")
+
+def save_fig_summary(y, y_hat, multi_mag, multi_phase, alphabets, folder_path, lr, L_link, alpha, SNR_dB,):
+        ax: matplotlib.axes.Axes
+        if multi_mag and multi_phase:
+            fig, (ax,_,_) = plt.subplots(1, 3, figsize=(15,9))
+            ax.set_title("Magnitude sample")
+            ax.scatter(np.real(alphabets[0]), np.imag(alphabets[0]), c='r', label='ideal')
+            y_hat_comp = mag_phase_2_complex(y_hat)
+            ax.scatter(np.real(y_hat_comp), np.imag(y_hat_comp), c='r', label='CNN out')
+            ax.legend(loc='upper right')
+            lr_str = f"{lr:}".replace('.', 'p')
+            alpha_str = f"{alpha:.1f}".replace('.', 'p')
+            plt.show
+
+
+
+        # plt.figure()
+        # plt.title("Magnitude sample")
+        # for val in alphabet.detach().cpu().numpy():
+        #     line = plt.axvline(x=val, color='red', linestyle='--')
+        # _, _, hist1 = plt.hist(y[:,:,1::2].flatten(), 200, alpha=0.5, density=True)
+        # _, _, hist2 = plt.hist(y_hat.flatten(), 200, alpha=0.5, density=True)
+        # plt.legend([line, hist1[0], hist2[0]],['ideal odd sample', 'DD out', 'CNN out'], loc='upper right')
+        # lr_str = f"{lr:}".replace('.', 'p')
+        # alpha_str = f"{alpha:.1f}".replace('.', 'p')
+        # plt.savefig(f"{folder_path}/lr{lr_str}_Llink{L_link*1e-3:.0f}km_alpha{alpha_str}_{SNR_dB}dB.png")
+        # plt.close()
+
 
 def analyse_channel_length(N_os, N_sim, N_taps, alpha, L_link, R_sym, beta2=-2.168e-26, energy_criteria = 99):
     ''' Function to determine the number of required taps for the channel filter, assuming a raised cosine and a chromatic dispersion channel
