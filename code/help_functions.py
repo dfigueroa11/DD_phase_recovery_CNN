@@ -34,60 +34,63 @@ def convolve(signal, filter):
     filter = torch.resolve_conj(torch.flip(filter, [-1]))
     return conv1d(signal, filter, padding='same')
 
-def common_constellation(mod, M, dtype=torch.cfloat, sqrt_flag=False):
-    '''Returns the constellation specified (1D tensor of size M)
+def norm_filt(N_sim, filt):
+    ''' Returns the filter normalized to unitary energy, taking into acount the simulation oversampling
 
     Arguments:
-    mod:        String with the modulation format, valid options are 'PAM', 'ASK', 'SQAM', 'QAM' or 'DDQAM'
-    M:          order of the modulation
-    dtype:      data type (optional, default torch.cfloat)
-    sqrt_flag:  whether to apply the sqrt to all symbol's magnitudes or not (boolean default: False)
+    N_sim:      oversampling factor used during the simulation to avoid aliasing (integer multiple of N_os)
+    filt:       filter to normalize (1D tensor)       
     '''
-    if mod == "PAM":
-        constellation = np.linspace(0, 1, num=M, endpoint=True)
-    elif mod == "ASK":
-        constellation = np.linspace(-1, 1, num=M, endpoint=True)
-    elif mod == "SQAM":
-        X_base = np.array([1, 1j, -1, -1j])
-        constellation = np.array([], dtype=np.complex64)
-        for ii in range(M // len(X_base)):
-            constellation = np.append(constellation, (ii + 1) * X_base)
-    elif mod == "QAM":
-        Mp = int(np.sqrt(M))
-        constellation1D = np.linspace(-1, 1, num=Mp, endpoint=True)
-        constellation = np.reshape(np.add.outer(constellation1D.T, 1j * constellation1D), -1)
-    elif mod == "DDQAM":
-        angle = np.arccos(1/3)
-        constellation = np.kron(np.arange(1, M//4+1),np.exp(np.array([0,angle,np.pi,np.pi+angle])*1j))
-    else:
-        raise ValueError("mod should be PAM, ASK, SQAM, QAM or DDQAM")
+    filt = filt * torch.sqrt(N_sim / torch.sum(torch.abs(filt) ** 2))
+    return filt
 
-    if sqrt_flag:
-        constellation = np.sqrt(np.abs(constellation))*constellation/(np.abs(constellation)+1e-30)
-    constellation = constellation / np.sqrt(np.mean(np.abs(constellation) ** 2))
-    return torch.tensor(constellation, dtype=dtype)
+def filt_windowing(filt, energy_criteria=99):  
+    ''' Returns the smallest window of the original filter centered around zero, than contains x% of the energy
+    of the original filter, and the number of taps of such filter
 
-def common_diff_encoder(mod, constellation, device):
-    '''Returns the constellation specified (1D tensor of size M)
+    Returns: filt_w, N_taps
 
     Arguments:
-    mod:            String with the modulation format, valid options are 'PAM', 'ASK', 'SQAM', 'QAM' or 'DDQAM'
-    constellation:  constellation:  constellation to be used (1D tensor)
-    device:         the device to use (cpu or cuda)
+    filt:               filter to window (1D tensor)
+    energy_criteria:    float between 0 and 100, interpreted as a percentage (default 99%)
+    '''  
+    filt_len = torch.numel(filt)
+    samp_idx = torch.arange(-(filt_len-1)/2,(filt_len-1)/2+1)
+    energy_tot = torch.sum(torch.abs(filt)**2)
+    energy_w = 0
+    n = -1
+    while energy_w < energy_tot*energy_criteria/100:
+        n = n+1
+        filt_w = filt[abs(samp_idx) <= n]
+        energy_w = torch.sum(torch.abs(filt_w)**2)
+    return filt_w, 2*n+1
+
+def analyse_channel_length(N_os, N_sim, N_taps, alpha, L_link, R_sym, beta2=-2.168e-26, energy_criteria = 99):
+    ''' Function to determine the number of required taps for the channel filter, assuming a raised cosine and a chromatic dispersion channel
+
+    Arguments:
+    N_os:               oversampling factor of the physical system (integer)
+    N_sim:              oversampling factor used during the simulation to avoid aliasing (integer multiple of N_os)
+    N_taps:             number of taps used for the test filter (integer)
+    alpha:              roll off factor of a raised cosine filter used as a pulse shape (float in [0,1])
+    L_link:             length of the SMF in meters (float) use if the channel presents CD
+    R_sym:              symbol rate in Hz (float) use if the channel presents CD
+    beta2:              beta2 parameter of the SMF in s^2/m (float default 2.168e-26)
+    energy_criteria:    float between 0 and 100, interpreted as a percentage (default 99%)
     '''
-    if mod == "PAM":
-        return None
-    elif mod == "ASK":
-        diff_mapping = torch.tensor([[0,1],[1,0]])
-    elif mod == "SQAM":
-        diff_mapping = torch.tensor([[3,0,1,2],[0,1,2,3],[1,2,3,0],[2,3,0,1]])
-    elif mod == "QAM":
-        return None
-    elif mod == "DDQAM":
-        diff_mapping = torch.tensor([[1,0,3,2],[0,1,2,3],[3,2,1,0],[2,3,0,1]])
-    else:
-        raise ValueError("mod should be PAM, ASK, SQAM, QAM or DDQAM")
-    return Differential_encoder.Differential_encoder(constellation, diff_mapping, device)
+    dd_system = set_up_DD_system(N_os= N_os, N_sim=N_sim,
+                                N_taps=N_taps,
+                                alpha=alpha, 
+                                L_link=L_link, R_sym=R_sym, beta2=beta2)
+
+    filt, N_taps = filt_windowing(torch.squeeze(dd_system.tx_filt), energy_criteria)
+    print(f"{N_taps} tap are needed to contain the {energy_criteria}% of the energy")
+    plt.figure()
+    t = np.arange(-np.floor(torch.numel(filt)/2),np.floor(torch.numel(filt)/2)+1)
+    plt.stem(t, np.abs(filt)**2)
+    t = np.arange(-np.floor(torch.numel(dd_system.tx_filt)/2),np.floor(torch.numel(dd_system.tx_filt)/2)+1)
+    plt.stem(t, np.abs(torch.squeeze(dd_system.tx_filt))**2, linefmt=':')
+    plt.show()
 
 def rcos_filt(alpha, N_taps, fs, sym_time, dtype=torch.cfloat):
     ''' Returns a raised cosine filter (1D tensor of length N_taps)
@@ -122,37 +125,6 @@ def chrom_disp_filt(L_link, R_sym, beta2, N_taps, N_sim, dtype=torch.cfloat):
     H_cd = np.exp(1j*((2*np.pi*f)**2*beta2*L_link/2))
     h_cd = np.fft.fftshift(np.fft.ifft(np.fft.ifftshift(H_cd)))
     return torch.tensor(h_cd, dtype=dtype)
-
-def norm_filt(N_sim, filt):
-    ''' Returns the filter normalized to unitary energy, taking into acount the simulation oversampling
-
-    Arguments:
-    N_sim:      oversampling factor used during the simulation to avoid aliasing (integer multiple of N_os)
-    filt:       filter to normalize (1D tensor)       
-    '''
-    filt = filt * torch.sqrt(N_sim / torch.sum(torch.abs(filt) ** 2))
-    return filt
-
-def filt_windowing(filt, energy_criteria=99):  
-    ''' Returns the smallest window of the original filter centered around zero, than contains x% of the energy
-    of the original filter, and the number of taps of such filter
-
-    Returns: filt_w, N_taps
-
-    Arguments:
-    filt:               filter to window (1D tensor)
-    energy_criteria:    float between 0 and 100, interpreted as a percentage (default 99%)
-    '''  
-    filt_len = torch.numel(filt)
-    samp_idx = torch.arange(-(filt_len-1)/2,(filt_len-1)/2+1)
-    energy_tot = torch.sum(torch.abs(filt)**2)
-    energy_w = 0
-    n = -1
-    while energy_w < energy_tot*energy_criteria/100:
-        n = n+1
-        filt_w = filt[abs(samp_idx) <= n]
-        energy_w = torch.sum(torch.abs(filt_w)**2)
-    return filt_w, 2*n+1
 
 def set_up_DD_system(N_os, N_sim, device, **kwargs):
     '''Returns a DD_system with the given configuration for common constellations,
@@ -210,6 +182,61 @@ def set_up_DD_system(N_os, N_sim, device, **kwargs):
         rx_filt = torch.tensor([1.])
     return DD_system.DD_system(N_os, N_sim, constellation , diff_encoder, pulse_shape, ch_imp_resp, rx_filt, device)
 
+def common_constellation(mod, M, dtype=torch.cfloat, sqrt_flag=False):
+    '''Returns the constellation specified (1D tensor of size M)
+
+    Arguments:
+    mod:        String with the modulation format, valid options are 'PAM', 'ASK', 'SQAM', 'QAM' or 'DDQAM'
+    M:          order of the modulation
+    dtype:      data type (optional, default torch.cfloat)
+    sqrt_flag:  whether to apply the sqrt to all symbol's magnitudes or not (boolean default: False)
+    '''
+    if mod == "PAM":
+        constellation = np.linspace(0, 1, num=M, endpoint=True)
+    elif mod == "ASK":
+        constellation = np.linspace(-1, 1, num=M, endpoint=True)
+    elif mod == "SQAM":
+        X_base = np.array([1, 1j, -1, -1j])
+        constellation = np.array([], dtype=np.complex64)
+        for ii in range(M // len(X_base)):
+            constellation = np.append(constellation, (ii + 1) * X_base)
+    elif mod == "QAM":
+        Mp = int(np.sqrt(M))
+        constellation1D = np.linspace(-1, 1, num=Mp, endpoint=True)
+        constellation = np.reshape(np.add.outer(constellation1D.T, 1j * constellation1D), -1)
+    elif mod == "DDQAM":
+        angle = np.arccos(1/3)
+        constellation = np.kron(np.arange(1, M//4+1),np.exp(np.array([0,angle,np.pi,np.pi+angle])*1j))
+    else:
+        raise ValueError("mod should be PAM, ASK, SQAM, QAM or DDQAM")
+
+    if sqrt_flag:
+        constellation = np.sqrt(np.abs(constellation))*constellation/(np.abs(constellation)+1e-30)
+    constellation = constellation / np.sqrt(np.mean(np.abs(constellation) ** 2))
+    return torch.tensor(constellation, dtype=dtype)
+
+def common_diff_encoder(mod, constellation, device):
+    '''Returns the constellation specified (1D tensor of size M)
+
+    Arguments:
+    mod:            String with the modulation format, valid options are 'PAM', 'ASK', 'SQAM', 'QAM' or 'DDQAM'
+    constellation:  constellation:  constellation to be used (1D tensor)
+    device:         the device to use (cpu or cuda)
+    '''
+    if mod == "PAM":
+        return None
+    elif mod == "ASK":
+        diff_mapping = torch.tensor([[0,1],[1,0]])
+    elif mod == "SQAM":
+        diff_mapping = torch.tensor([[3,0,1,2],[0,1,2,3],[1,2,3,0],[2,3,0,1]])
+    elif mod == "QAM":
+        return None
+    elif mod == "DDQAM":
+        diff_mapping = torch.tensor([[1,0,3,2],[0,1,2,3],[3,2,1,0],[2,3,0,1]])
+    else:
+        raise ValueError("mod should be PAM, ASK, SQAM, QAM or DDQAM")
+    return Differential_encoder.Differential_encoder(constellation, diff_mapping, device)
+
 def DD_1sym_ISI(x, h0=1, h1=1/2, device='cpu'):
     '''Apply ideal DD for a channel with one symbol ISI, with Tx_filter = [h1, h0, h1]
     
@@ -245,6 +272,9 @@ def abs_phase_diff(x, dim=-1):
     signal (tensor of size ((batch_size, 1, N_sym))
     '''
     return torch.abs(torch.remainder(torch.abs(torch.diff(torch.angle(x))+torch.pi),2*torch.pi)-torch.pi)
+
+def mag_phase_2_complex(x):
+    return x[:,0,:]*torch.exp(1j*x[:,1,:])
 
 def get_ER(Tx, Rx, tol=1e-5):
     ''' Calculate the error rate between Tx and Rx with a given tolerance, that means count
@@ -301,109 +331,3 @@ def decode_and_ER_mag_phase(Tx, Rx, precision=5):
     Rx = mag_phase_2_complex(Rx)
     Rx_deco = min_distance_dec(alphabet, Rx)
     return alphabet, get_ER(Tx,Rx_deco)
-
-def mag_phase_2_complex(x):
-    return x[:,0,:]*torch.exp(1j*x[:,1,:])
-
-def print_progress(y_ideal, y_hat, batch_size, progress, loss, multi_mag, multi_phase):
-    if multi_mag and multi_phase:
-        _, mag_ER = decode_and_ER(y_ideal[:,0,:], y_hat[:,0,:])
-        _, phase_ER = decode_and_ER(y_ideal[:,1,:], y_hat[:,1,:])
-        _, SER = decode_and_ER_mag_phase(y_ideal, y_hat)
-        print(f"\tBatch size {batch_size:_}\tprogress {progress:>6.1%}\tloss: {loss:.3e}\tmag ER: {mag_ER:.3e}\tphase ER: {phase_ER:.3e}\tSER: {SER:.3e}",end='\r')
-    else:
-        _, SER = decode_and_ER(y_ideal, y_hat)
-        print(f"\tBatch size {batch_size:_}\tprogress {progress:>6.1%}\tloss: {loss:.3e}\tSER: {SER:.3e}",end='\r')
-
-def print_save_summary(y_ideal, y_hat, multi_mag, multi_phase, lr, L_link, alpha, SNR_dB, path):
-    if multi_mag and multi_phase:
-        alphabet_mag, mag_ER = decode_and_ER(y_ideal[:,0,:], y_hat[:,0,:])
-        alphabet_phase, phase_ER = decode_and_ER(y_ideal[:,1,:], y_hat[:,1,:])
-        alphabet, SER = decode_and_ER_mag_phase(y_ideal, y_hat)
-        print(f"\tmag ER: {mag_ER:.3e}\tphase ER: {phase_ER:.3e}\tSER: {SER:.3e}")
-        alphabets = [alphabet_mag, alphabet_phase, alphabet]
-        SERs = [mag_ER, phase_ER, SER]
-    else:
-        alphabet, SER = decode_and_ER(y_ideal, y_hat)
-        print(f"\tSER: {SER:.3e}")
-        alphabets = [alphabet]
-        SERs = [SER]
-    
-    with open(path, 'a') as file:
-        if multi_mag and multi_phase:    
-            file.write(f"lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB}dB --> mag ER:{mag_ER:.10e}, phase ER:{phase_ER:.10e}, SER: {SER:.10e}")
-        else:
-            file.write(f"lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB}dB --> SER:{SER:.10e}\n")
-    return alphabets, SERs
-
-def save_fig_summary(y, y_hat, multi_mag, multi_phase, alphabets, folder_path, lr, L_link, alpha, SNR_dB,):
-        if multi_mag and multi_phase:
-            fig, (ax1,ax2,ax3) = plt.subplots(1, 3, figsize=(15,9))
-            plot_constellation(ax1, y_hat, alphabets[2])
-            plot_histogram(ax2, y[:,:,1::2].flatten(), y_hat[:,0,:].flatten(), alphabets[0], "Magnitude")
-            plot_histogram(ax3, y[:,:,0::2].flatten(), y_hat[:,1,:].flatten(), alphabets[1], "Phase")
-            lr_str = f"{lr:}".replace('.', 'p')
-            alpha_str = f"{alpha:.1f}".replace('.', 'p')
-            fig.savefig(f"{folder_path}/lr{lr_str}_Llink{L_link*1e-3:.0f}km_alpha{alpha_str}_{SNR_dB}dB.png")
-            plt.close()
-            return
-        if multi_mag:
-            fig, ax1 = plt.subplots(figsize=(5,9))
-            plot_histogram(ax1, y[:,:,1::2].flatten(), y_hat[:,0,:].flatten(), alphabets[0], "Magnitude")
-            lr_str = f"{lr:}".replace('.', 'p')
-            alpha_str = f"{alpha:.1f}".replace('.', 'p')
-            fig.savefig(f"{folder_path}/lr{lr_str}_Llink{L_link*1e-3:.0f}km_alpha{alpha_str}_{SNR_dB}dB.png")
-            plt.close()
-            return
-        if multi_phase:
-            fig, ax1 = plt.subplots(figsize=(5,9))
-            plot_histogram(ax1, y[:,:,0::2].flatten(), y_hat[:,0,:].flatten(), alphabets[0], "Phase")
-            lr_str = f"{lr:}".replace('.', 'p')
-            alpha_str = f"{alpha:.1f}".replace('.', 'p')
-            fig.savefig(f"{folder_path}/lr{lr_str}_Llink{L_link*1e-3:.0f}km_alpha{alpha_str}_{SNR_dB}dB.png")
-            plt.close()
-            return
-
-def plot_constellation(ax, y_hat, alphabet):
-    ax.set_title("Constellation diagram")
-    y_hat_comp = mag_phase_2_complex(y_hat)
-    ax.scatter(np.real(y_hat_comp), np.imag(y_hat_comp), c='b', alpha=0.1, label='CNN out')
-    ax.scatter(np.real(alphabet), np.imag(alphabet), c='r', label='ideal')
-    ax.legend(loc='upper right')
-    ax.grid()
-
-def plot_histogram(ax, y, y_hat, alphabet, name):
-    ax.set_title(name)
-    for val in alphabet:
-        line = ax.axvline(x=val, color='red', linestyle='--')
-    _, _, hist1 = ax.hist(y, 200, alpha=0.5, density=True)
-    _, _, hist2 = ax.hist(y_hat, 200, alpha=0.5, density=True)
-    ax.legend([line, hist1[0], hist2[0]],['ideal', 'DD out', 'CNN out'], loc='upper right')
-    ax.grid()
-
-def analyse_channel_length(N_os, N_sim, N_taps, alpha, L_link, R_sym, beta2=-2.168e-26, energy_criteria = 99):
-    ''' Function to determine the number of required taps for the channel filter, assuming a raised cosine and a chromatic dispersion channel
-
-    Arguments:
-    N_os:               oversampling factor of the physical system (integer)
-    N_sim:              oversampling factor used during the simulation to avoid aliasing (integer multiple of N_os)
-    N_taps:             number of taps used for the test filter (integer)
-    alpha:              roll off factor of a raised cosine filter used as a pulse shape (float in [0,1])
-    L_link:             length of the SMF in meters (float) use if the channel presents CD
-    R_sym:              symbol rate in Hz (float) use if the channel presents CD
-    beta2:              beta2 parameter of the SMF in s^2/m (float default 2.168e-26)
-    energy_criteria:    float between 0 and 100, interpreted as a percentage (default 99%)
-    '''
-    dd_system = set_up_DD_system(N_os= N_os, N_sim=N_sim,
-                                N_taps=N_taps,
-                                alpha=alpha, 
-                                L_link=L_link, R_sym=R_sym, beta2=beta2)
-
-    filt, N_taps = filt_windowing(torch.squeeze(dd_system.tx_filt), energy_criteria)
-    print(f"{N_taps} tap are needed to contain the {energy_criteria}% of the energy")
-    plt.figure()
-    t = np.arange(-np.floor(torch.numel(filt)/2),np.floor(torch.numel(filt)/2)+1)
-    plt.stem(t, np.abs(filt)**2)
-    t = np.arange(-np.floor(torch.numel(dd_system.tx_filt)/2),np.floor(torch.numel(dd_system.tx_filt)/2)+1)
-    plt.stem(t, np.abs(torch.squeeze(dd_system.tx_filt))**2, linefmt=':')
-    plt.show()

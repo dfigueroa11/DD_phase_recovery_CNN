@@ -8,6 +8,7 @@ import os
 import sys
 
 import help_functions as hlp
+import reporting_tools as rep_tool
 import DD_system
 import CNN_equalizer
 
@@ -59,7 +60,7 @@ def train_CNN():
             optimizer.zero_grad()
             loss_evolution.append(loss.detach().cpu().numpy())
             if (i+1)%(batches_per_epoch//checkpoint_per_epoch) == 0:
-                hlp.print_progress(y_ideal.detach().cpu(), y_hat.detach().cpu(), batch_size, (i+1)/batches_per_epoch,
+                rep_tool.print_progress(y_ideal.detach().cpu(), y_hat.detach().cpu(), batch_size, (i+1)/batches_per_epoch,
                                    loss_evolution[-1], dd_system.multi_mag_const, dd_system.multi_phase_const)
         print()
 
@@ -71,12 +72,12 @@ def eval_n_save_CNN():
     y_ideal = hlp.create_ideal_y(u, dd_system.multi_mag_const, dd_system.multi_phase_const,
                                  h0=dd_system.tx_filt[0,0,N_taps//2], h_rx=torch.max(dd_system.rx_filt)).detach().cpu()[:,:,1:]
     
-    alphabets,_ = hlp.print_save_summary(y_ideal, y_hat,
+    alphabets,_ = rep_tool.print_save_summary(y_ideal, y_hat,
                            dd_system.multi_mag_const, dd_system.multi_phase_const,
                            lr, L_link, alpha, SNR_dB, f"{folder_path}/SER_results.txt")
 
     if SNR_dB in SNR_save_fig and lr in lr_save_fig and L_link in L_link_save_fig and alpha in alpha_save_fig:
-        hlp.save_fig_summary(y.detach().cpu(), y_hat, dd_system.multi_mag_const, dd_system.multi_phase_const, alphabets,
+        rep_tool.save_fig_summary(y.detach().cpu(), y_hat, dd_system.multi_mag_const, dd_system.multi_phase_const, alphabets,
                              folder_path, lr, L_link, alpha, SNR_dB)
         
 
