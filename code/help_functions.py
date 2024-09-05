@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-import matplotlib.axes
+import matplotlib.axes as axes
 
 from torch.nn.functional import conv1d
 
@@ -231,7 +231,7 @@ def create_ideal_y(u, multi_mag, multi_phase, h0=1, h_rx=1):
     if not multi_mag:
         return torch.angle(u)
     if not multi_phase:
-        return torch.square(torch.abs(h0*u))
+        return torch.square(torch.abs(h0*u))*h_rx
     return torch.cat((torch.square(torch.abs(h0*u))*h_rx,torch.angle(u)), dim=1)
 
 def abs_phase_diff(x, dim=-1):
@@ -339,45 +339,47 @@ def print_save_summary(y_ideal, y_hat, multi_mag, multi_phase, lr, L_link, alpha
 def save_fig_summary(y, y_hat, multi_mag, multi_phase, alphabets, folder_path, lr, L_link, alpha, SNR_dB,):
         if multi_mag and multi_phase:
             fig, (ax1,ax2,ax3) = plt.subplots(1, 3, figsize=(15,9))
-            ax1.set_title("Constellation diagram")
-            y_hat_comp = mag_phase_2_complex(y_hat)
-            ax1.scatter(np.real(y_hat_comp), np.imag(y_hat_comp), c='b', alpha=0.1, label='CNN out')
-            ax1.scatter(np.real(alphabets[2]), np.imag(alphabets[2]), c='r', label='ideal')
-            ax1.legend(loc='upper right')
-            ax1.grid()
+            plot_constellation(ax1, y_hat, alphabets[2])
+            plot_histogram(ax2, y[:,:,1::2].flatten(), y_hat[:,0,:].flatten(), alphabets[0], "Magnitude")
+            plot_histogram(ax3, y[:,:,0::2].flatten(), y_hat[:,1,:].flatten(), alphabets[1], "Phase")
+            lr_str = f"{lr:}".replace('.', 'p')
+            alpha_str = f"{alpha:.1f}".replace('.', 'p')
+            fig.savefig(f"{folder_path}/lr{lr_str}_Llink{L_link*1e-3:.0f}km_alpha{alpha_str}_{SNR_dB}dB.png")
+            plt.close()
+            return
+        if multi_mag:
+            fig, ax1 = plt.subplots(figsize=(5,9))
+            plot_histogram(ax1, y[:,:,1::2].flatten(), y_hat[:,0,:].flatten(), alphabets[0], "Magnitude")
+            lr_str = f"{lr:}".replace('.', 'p')
+            alpha_str = f"{alpha:.1f}".replace('.', 'p')
+            fig.savefig(f"{folder_path}/lr{lr_str}_Llink{L_link*1e-3:.0f}km_alpha{alpha_str}_{SNR_dB}dB.png")
+            plt.close()
+            return
+        if multi_phase:
+            fig, ax1 = plt.subplots(figsize=(5,9))
+            plot_histogram(ax1, y[:,:,0::2].flatten(), y_hat[:,0,:].flatten(), alphabets[0], "Phase")
+            lr_str = f"{lr:}".replace('.', 'p')
+            alpha_str = f"{alpha:.1f}".replace('.', 'p')
+            fig.savefig(f"{folder_path}/lr{lr_str}_Llink{L_link*1e-3:.0f}km_alpha{alpha_str}_{SNR_dB}dB.png")
+            plt.close()
+            return
 
-            ax2.set_title("Magnitude")
-            for val in alphabets[0].detach().cpu().numpy():
-                line = ax2.axvline(x=val, color='red', linestyle='--')
-            _, _, hist1 = ax2.hist(y[:,:,1::2].flatten(), 200, alpha=0.5, density=True)
-            _, _, hist2 = ax2.hist(y_hat[:,0,1:].flatten(), 200, alpha=0.5, density=True)
-            ax2.legend([line, hist1[0], hist2[0]],['ideal mag', 'DD out', 'CNN out'], loc='upper right')
-            ax2.grid()
+def plot_constellation(ax, y_hat, alphabet):
+    ax.set_title("Constellation diagram")
+    y_hat_comp = mag_phase_2_complex(y_hat)
+    ax.scatter(np.real(y_hat_comp), np.imag(y_hat_comp), c='b', alpha=0.1, label='CNN out')
+    ax.scatter(np.real(alphabet), np.imag(alphabet), c='r', label='ideal')
+    ax.legend(loc='upper right')
+    ax.grid()
 
-            ax3.set_title("Phase difference")
-            for val in alphabets[1].detach().cpu().numpy():
-                line = ax3.axvline(x=val, color='red', linestyle='--')
-            _, _, hist1 = ax3.hist(y[:,:,0::2].flatten(), 200, alpha=0.5, density=True)
-            _, _, hist2 = ax3.hist(y_hat[:,0,1:].flatten(), 200, alpha=0.5, density=True)
-            ax3.legend([line, hist1[0], hist2[0]],['ideal phase', 'DD out', 'CNN out'], loc='upper right')
-            ax3.grid()
-
-            plt.show()
-
-
-
-        # plt.figure()
-        # plt.title("Magnitude sample")
-        # for val in alphabet.detach().cpu().numpy():
-        #     line = plt.axvline(x=val, color='red', linestyle='--')
-        # _, _, hist1 = plt.hist(y[:,:,1::2].flatten(), 200, alpha=0.5, density=True)
-        # _, _, hist2 = plt.hist(y_hat.flatten(), 200, alpha=0.5, density=True)
-        # plt.legend([line, hist1[0], hist2[0]],['ideal odd sample', 'DD out', 'CNN out'], loc='upper right')
-        # lr_str = f"{lr:}".replace('.', 'p')
-        # alpha_str = f"{alpha:.1f}".replace('.', 'p')
-        # plt.savefig(f"{folder_path}/lr{lr_str}_Llink{L_link*1e-3:.0f}km_alpha{alpha_str}_{SNR_dB}dB.png")
-        # plt.close()
-
+def plot_histogram(ax, y, y_hat, alphabet, name):
+    ax.set_title(name)
+    for val in alphabet:
+        line = ax.axvline(x=val, color='red', linestyle='--')
+    _, _, hist1 = ax.hist(y, 200, alpha=0.5, density=True)
+    _, _, hist2 = ax.hist(y_hat, 200, alpha=0.5, density=True)
+    ax.legend([line, hist1[0], hist2[0]],['ideal', 'DD out', 'CNN out'], loc='upper right')
+    ax.grid()
 
 def analyse_channel_length(N_os, N_sim, N_taps, alpha, L_link, R_sym, beta2=-2.168e-26, energy_criteria = 99):
     ''' Function to determine the number of required taps for the channel filter, assuming a raised cosine and a chromatic dispersion channel
