@@ -274,6 +274,11 @@ def abs_phase_diff(x, dim=-1):
     return torch.abs(torch.remainder(torch.abs(torch.diff(torch.angle(x))+torch.pi),2*torch.pi)-torch.pi)
 
 def mag_phase_2_complex(x):
+    ''' Converts from mag phase representation to complex number
+    
+    Argument:
+    x:      Tensor to convert (shape (batch_size, 2, N_sym) [:,0,:] interpreted as mag, [:,1,:] interpreted as phase)
+    '''
     return x[:,0,:]*torch.exp(1j*x[:,1,:])
 
 def get_ER(Tx, Rx, tol=1e-5):
@@ -317,8 +322,9 @@ def decode_and_ER_mag_phase(Tx, Rx, precision=5):
     ''' Decodes under minimum distance criteria and calculates the error rate between Tx and Rx
 
     Arguments:
-    Tx:         noiseless transmitted symbols (the alphabet is computed from Tx ass all different values that Tx take, that is why Tx must be noiseless)
-    Rx:         received symbols (same size as Tx)
+    Tx:         noiseless transmitted symbols (shape (batch_size, 2, N_sym) [:,0,:] interpreted as mag, [:,1,:] interpreted as phase)
+                (the alphabet is computed from Tx ass all different values that Tx take, that is why Tx must be noiseless)
+    Rx:         received symbols (same shape as Tx)
     precision:  number of decimals used to determine the alphabet in the rounding process (default=5)
 
     Return:
