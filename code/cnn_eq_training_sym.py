@@ -29,7 +29,8 @@ def initialize_CNN_optimizer(lr):
     cnn_equalizer = CNN_equalizer.CNN_equalizer(num_ch_aux, ker_lens, strides, activ_func, groups_list)
     cnn_equalizer.to(device)
     optimizer = optim.Adam(cnn_equalizer.parameters(), eps=1e-07, lr=lr)
-    return cnn_equalizer, optimizer
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5)
+    return cnn_equalizer, optimizer, scheduler
 
 def train_CNN():
     loss_evolution = [-1]
@@ -49,8 +50,9 @@ def train_CNN():
             optimizer.zero_grad()
             loss_evolution.append(loss.detach().cpu().numpy())
             if (i+1)%(batches_per_epoch//checkpoint_per_epoch) == 0:
-                io_tool.print_progress(y_ideal.detach().cpu(), y_hat.detach().cpu(), batch_size, (i+1)/batches_per_epoch,
-                                   loss_evolution[-1], dd_system.multi_mag_const, dd_system.multi_phase_const)
+                SERs = io_tool.print_progress(y_ideal.detach().cpu(), y_hat.detach().cpu(), batch_size, (i+1)/batches_per_epoch,
+                                              loss_evolution[-1], dd_system.multi_mag_const, dd_system.multi_phase_const)
+                scheduler.step(sum(SERs))
         print()
 
 def eval_n_save_CNN():
@@ -98,13 +100,13 @@ strides = np.array([1,1,2])
 activ_func = torch.nn.ELU()
 
 ### Training hyperparameter
-batches_per_epoch = 30
-batch_size_per_epoch = [10]
+batches_per_epoch = 700
+batch_size_per_epoch = [10,]
 N_sym = 1000
-lr_steps = np.array([0.0007, 0.001, 0.003, 0.005])       # for sweep over lr
-lr_save_fig = lr_steps#[[2,]]
+lr_steps = np.array([0.004])       # for sweep over lr
+lr_save_fig = lr_steps
 
-checkpoint_per_epoch = 1
+checkpoint_per_epoch = 100
 
 folder_path = io_tool.create_folder(f"results/{mod_format}{M:}_odd_samp",0)
 for lr in lr_steps:
@@ -113,6 +115,6 @@ for lr in lr_steps:
             for SNR_dB in SNR_dB_steps:
                 print(f'training model with lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB} dB')
                 dd_system = initialize_dd_system()
-                cnn_equalizer, optimizer = initialize_CNN_optimizer(lr)
+                cnn_equalizer, optimizer, scheduler = initialize_CNN_optimizer(lr)
                 train_CNN()
                 eval_n_save_CNN()

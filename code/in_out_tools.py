@@ -35,10 +35,13 @@ def print_progress(y_ideal, y_hat, batch_size, progress, loss, multi_mag, multi_
         _, mag_ER = hlp.decode_and_ER(y_ideal[:,0,:], y_hat[:,0,:])
         _, phase_ER = hlp.decode_and_ER(y_ideal[:,1,:], y_hat[:,1,:])
         _, SER = hlp.decode_and_ER_mag_phase(y_ideal, y_hat)
+        SERs = [mag_ER, phase_ER, SER]
         print(f"\tBatch size {batch_size:_}\tprogress {progress:>6.1%}\tloss: {loss:.3e}\tmag ER: {mag_ER:.3e}\tphase ER: {phase_ER:.3e}\tSER: {SER:.3e}",end='\r')
     else:
         _, SER = hlp.decode_and_ER(y_ideal, y_hat)
         print(f"\tBatch size {batch_size:_}\tprogress {progress:>6.1%}\tloss: {loss:.3e}\tSER: {SER:.3e}",end='\r')
+        SERs = [SER]
+    return SERs
 
 def print_save_summary(y_ideal, y_hat, multi_mag, multi_phase, lr, L_link, alpha, SNR_dB, path):
     ''' Print and saves the summary of the training process
