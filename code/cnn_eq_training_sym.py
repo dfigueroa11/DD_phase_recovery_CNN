@@ -73,12 +73,12 @@ def eval_n_save_CNN():
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("We are using the following device for learning:",device)
 
-arguments = sys.argv[1:]
+args = io_tool.process_args()
 ### System definition
 N_os = 2
 N_sim = 2
-mod_format = "ASK"#arguments[0]
-M = 4#int(arguments[1])
+mod_format = args.mod_format
+M = args.order
 sqrt_flag = False
 diff_encoder = False
 N_taps = 41

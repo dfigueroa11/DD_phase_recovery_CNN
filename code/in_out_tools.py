@@ -3,6 +3,7 @@ import torch
 import os
 import matplotlib.pyplot as plt
 import matplotlib.axes as axes
+import argparse
 
 
 import help_functions as hlp
@@ -139,3 +140,23 @@ def plot_histogram(ax, y, y_hat, alphabet, name):
     _, _, hist2 = ax.hist(y_hat, 200, alpha=0.5, density=True)
     ax.legend([line, hist1[0], hist2[0]],['ideal', 'DD out', 'CNN out'], loc='upper right')
     ax.grid()
+
+def process_args():
+    formatter = lambda prog: argparse.RawTextHelpFormatter(prog, max_help_position=60)
+    parser = argparse.ArgumentParser(
+        description="CNN equalizer for Direct Detection channels with phase recovery",
+        formatter_class=formatter)
+    parser.add_argument(
+        "--mod_format",
+        "-m",
+        type=str,
+        help="modulation format",
+        choices=["ASK", "PAM", "DDQAM", "QAM"],
+        default="ASK")
+    parser.add_argument(
+        "--order",
+        "-o",
+        type=int,
+        help="modulation format order",
+        default=4)
+    return parser.parse_args()
