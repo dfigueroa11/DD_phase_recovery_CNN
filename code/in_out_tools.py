@@ -19,32 +19,8 @@ def create_folder(path,n_copy):
         print(f"directory '{path}' already exist, try to create '{path}_{n_copy}'")
         return create_folder(path,n_copy)
 
-def print_progress(y_ideal, y_hat, batch_size, progress, loss, multi_mag, multi_phase):
-    '''Print the training progress
-
-    Arguments:
-    y_ideal:        Tensor containing the ideal magnitudes and phase differences (shape (batch_size, 2/1, N_sym) depending on multi_mag, multi_phase)
-    y_hat:          output of the CNN (same shape as y_ideal)
-    batch_size:     int
-    progress:       progress of the current epoch (float)
-    loss:           float
-    multi_mag:      whether the constellation have multiple magnitudes or not
-    multi_phase:    whether the constellation have multiple phases or not
-    '''
-    if multi_mag and multi_phase:
-        _, mag_ER = hlp.decode_and_ER(y_ideal[:,0,:], y_hat[:,0,:])
-        _, phase_ER = hlp.decode_and_ER(y_ideal[:,1,:], y_hat[:,1,:])
-        _, SER = hlp.decode_and_ER_mag_phase(y_ideal, y_hat)
-        SERs = [mag_ER, phase_ER, SER]
-        print(f"\tBatch size {batch_size:_}\tprogress {progress:>6.1%}\tloss: {loss:.3e}\tmag ER: {mag_ER:.3e}\tphase ER: {phase_ER:.3e}\tSER: {SER:.3e}",end='\r')
-    else:
-        _, SER = hlp.decode_and_ER(y_ideal, y_hat)
-        print(f"\tBatch size {batch_size:_}\tprogress {progress:>6.1%}\tloss: {loss:.3e}\tSER: {SER:.3e}",end='\r')
-        SERs = [SER]
-    return SERs
-
-def init_summary_file(path, multi_mag, multi_phase):
-    ''' creates the file to save the results, and writes the first row with the variable names
+def init_progress_file(path, multi_mag, multi_phase):
+    ''' creates the file to save the progress, and writes the first row with the variable names
 
     Arguments:
     path:           path of the file to save the results
@@ -53,48 +29,78 @@ def init_summary_file(path, multi_mag, multi_phase):
     '''
     with open(path, 'a') as file:
         if multi_mag and multi_phase:
-            file.write("lr,L_link_km,alpha,SNR_dB,mag_ER,phase_ER,SER")
+            file.write(f"Batch_size,progress,lr,loss,mag_ER,phase_ER,SER\n")
         else:
-            file.write("lr,L_link_km,alpha,SNR_dB,SER")
+            file.write(f"Batch_size,progress,lr,loss,SER\n")
+    
+def save_progress(path, multi_mag, multi_phase, batch_size, progress, lr, loss, SERs):
+    ''' save the progress
 
-def print_save_summary(y_ideal, y_hat, multi_mag, multi_phase, lr, L_link, alpha, SNR_dB, path):
+    Arguments:
+    path:           path of the file to save the results
+    multi_mag:      whether the constellation have multiple magnitudes or not
+    multi_phase:    whether the constellation have multiple phases or not
+    batch_size:     int
+    progress:       progress of the current epoch (float)
+    lr:             learning rate
+    loss:           float
+    SERs:           [mag ER, phase, ER, SER] or [SER] depending on multi_mag, multi_phase
+    '''
+    with open(path, 'a') as file:
+        if multi_mag and multi_phase:
+            file.write(f"{batch_size},{progress:.5},{lr[0]:.5e},{loss:.5e},{SERs[0]:.5e},{SERs[1]:.5e},{SERs[2]:.5e}\n")
+        else:
+            file.write(f"{batch_size},{progress:.5},{lr[0]:.5e},{loss:.5e},{SERs[0]:.5e}\n")
+    return 
+
+def print_progress(multi_mag, multi_phase, batch_size, progress, lr, loss, SERs):
+    '''Print the training progress
+
+    Arguments:
+    multi_mag:      whether the constellation have multiple magnitudes or not
+    multi_phase:    whether the constellation have multiple phases or not
+    batch_size:     int
+    progress:       progress of the current epoch (float)
+    lr:             learning rate
+    loss:           float
+    SERs:           [mag ER, phase, ER, SER] or [SER] depending on multi_mag, multi_phase
+    '''
+    if multi_mag and multi_phase:
+        print(f"\tBatch size: {batch_size:>4}  progress: {progress:>6.1%}   lr: {lr[0]:>8.2e}   loss: {loss:>9.3e}   "+
+              f"mag ER: {SERs[0]:>9.3e}   phase ER: {SERs[1]:>9.3e}   SER: {SERs[2]:>9.3e}", end='\r')
+    else:
+        print(f"\tBatch size: {batch_size:>4}  progress: {progress:>6.1%}   lr: {lr[0]:>8.2e}   loss: {loss:>9.3e}   SER: {SERs[0]:>9.3e}", end='\r')
+
+def init_summary_file(path):
+    ''' creates the file to save the results, and writes the first row with the variable names
+
+    Arguments:
+    path:           path of the file to save the results
+    '''
+    with open(path, 'a') as file:
+        file.write("lr,L_link_km,alpha,SNR_dB,(mag_ER,phase_ER),SER\n")
+        
+def print_save_summary(path, multi_mag, multi_phase, lr, L_link, alpha, SNR_dB, SERs):
     ''' Print and saves the summary of the training process
 
     Arguments:
-    y_ideal:        Tensor containing the ideal magnitudes and phase differences (shape (batch_size, 2/1, N_sym) depending on multi_mag, multi_phase)
-    y_hat:          output of the CNN (same shape as y_ideal)
+    path:           path of the file to save the results
     multi_mag:      whether the constellation have multiple magnitudes or not
     multi_phase:    whether the constellation have multiple phases or not
     lr:             learning rate
     L_link:         length of the SMF in meters (float) use if the channel presents CD
     alpha:          roll off factor (float between 0 and 1)
     SNR_dB:         SNR in dB used for the simulation (float)
-    path:           path of the file to save the results
-
-    Returns:
-    alphabets:      [mag alphabet, phase alphabet, symbol alphabet] or [alphabet] depending on multi_mag, multi_phase
-    SER:            [mag ER, phase, ER, SER] or [SER] depending on multi_mag, multi_phase
+    SERs:           [mag ER, phase, ER, SER] or [SER] depending on multi_mag, multi_phase
     '''
-    if multi_mag and multi_phase:
-        alphabet_mag, mag_ER = hlp.decode_and_ER(y_ideal[:,0,:], y_hat[:,0,:])
-        alphabet_phase, phase_ER = hlp.decode_and_ER(y_ideal[:,1,:], y_hat[:,1,:])
-        alphabet, SER = hlp.decode_and_ER_mag_phase(y_ideal, y_hat)
-        print(f"\tmag ER: {mag_ER:.3e}\tphase ER: {phase_ER:.3e}\tSER: {SER:.3e}")
-        alphabets = [alphabet_mag, alphabet_phase, alphabet]
-        SERs = [mag_ER, phase_ER, SER]
-    else:
-        alphabet, SER = hlp.decode_and_ER(y_ideal, y_hat)
-        print(f"\tSER: {SER:.3e}")
-        alphabets = [alphabet]
-        SERs = [SER]
-    
     with open(path, 'a') as file:
         if multi_mag and multi_phase:
-            file.write(f"{lr},{L_link*1e-3:.0f},{alpha},{SNR_dB},{mag_ER:.10e},{phase_ER:.10e},{SER:.10e}")
+            file.write(f"{lr},{L_link*1e-3:.0f},{alpha},{SNR_dB},{SERs[0]:.10e},{SERs[1]:.10e},{SERs[2]:.10e}\n")
+            print(f"\tmag ER: {SERs[0]:>9.3e}   phase ER: {SERs[1]:>9.3e}   SER: {SERs[2]:>9.3e}")
         else:
-            file.write(f"{lr},{L_link*1e-3:.0f},{alpha},{SNR_dB},{SER:.10e}\n")
-    return alphabets, SERs
-
+            file.write(f"{lr},{L_link*1e-3:.0f},{alpha},{SNR_dB},{SERs[0]:.10e}\n")
+            print(f"\tSER: {SERs[0]:>9.3e}")
+    
 def save_fig_summary(y, y_hat, multi_mag, multi_phase, alphabets, folder_path, lr, L_link, alpha, SNR_dB):
     '''Save the figure with the resume
     
@@ -120,9 +126,7 @@ def save_fig_summary(y, y_hat, multi_mag, multi_phase, alphabets, folder_path, l
         name = "Magnitude" if multi_mag else "phase"
         plot_histogram(ax1, y[:,:,1::2].flatten(), y_hat[:,0,:].flatten(), alphabets[0], name)
 
-    lr_str = f"{lr:}".replace('.', 'p')
-    alpha_str = f"{alpha:.1f}".replace('.', 'p')
-    fig.savefig(f"{folder_path}/lr{lr_str}_Llink{L_link*1e-3:.0f}km_alpha{alpha_str}_{SNR_dB}dB.png")
+    fig.savefig(f"{folder_path}/{make_file_name(lr, L_link, alpha, SNR_dB)}.png")
     plt.close()
 
 def plot_constellation(ax, y_hat, alphabet):
@@ -177,3 +181,8 @@ def process_args():
         help="modulation format order",
         default=4)
     return parser.parse_args()
+
+def make_file_name(lr, L_link, alpha, SNR_dB):
+    lr_str = f"{lr:}".replace('.', 'p')
+    alpha_str = f"{alpha:.1f}".replace('.', 'p')
+    return f"lr{lr_str}_Llink{L_link*1e-3:.0f}km_alpha{alpha_str}_{SNR_dB}dB"

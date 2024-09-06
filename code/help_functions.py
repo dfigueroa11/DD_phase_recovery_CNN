@@ -337,3 +337,28 @@ def decode_and_ER_mag_phase(Tx, Rx, precision=5):
     Rx = mag_phase_2_complex(Rx)
     Rx_deco = min_distance_dec(alphabet, Rx)
     return alphabet, get_ER(Tx,Rx_deco)
+
+def calc_progress(y_ideal, y_hat, multi_mag, multi_phase):
+    '''Print the training progress
+
+    Arguments:
+    y_ideal:        Tensor containing the ideal magnitudes and phase differences (shape (batch_size, 2/1, N_sym) depending on multi_mag, multi_phase)
+    y_hat:          output of the CNN (same shape as y_ideal)
+    multi_mag:      whether the constellation have multiple magnitudes or not
+    multi_phase:    whether the constellation have multiple phases or not
+
+    Returns:
+    alphabets:      [mag alphabet, phase alphabet, symbol alphabet] or [alphabet] depending on multi_mag, multi_phase
+    SERs:           [mag ER, phase, ER, SER] or [SER] depending on multi_mag, multi_phase
+    '''
+    if multi_mag and multi_phase:
+        alphabet_mag, mag_ER = decode_and_ER(y_ideal[:,0,:], y_hat[:,0,:])
+        alphabet_phase, phase_ER = decode_and_ER(y_ideal[:,1,:], y_hat[:,1,:])
+        alphabet, SER = decode_and_ER_mag_phase(y_ideal, y_hat)
+        alphabets = [alphabet_mag, alphabet_phase, alphabet]
+        SERs = [mag_ER, phase_ER, SER]
+    else:
+        alphabet, SER = decode_and_ER(y_ideal, y_hat)
+        alphabets = [alphabet]
+        SERs = [SER]
+    return alphabets, SERs
