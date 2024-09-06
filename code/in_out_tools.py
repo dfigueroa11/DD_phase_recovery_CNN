@@ -43,6 +43,20 @@ def print_progress(y_ideal, y_hat, batch_size, progress, loss, multi_mag, multi_
         SERs = [SER]
     return SERs
 
+def init_summary_file(path, multi_mag, multi_phase):
+    ''' creates the file to save the results, and writes the first row with the variable names
+
+    Arguments:
+    path:           path of the file to save the results
+    multi_mag:      whether the constellation have multiple magnitudes or not
+    multi_phase:    whether the constellation have multiple phases or not
+    '''
+    with open(path, 'a') as file:
+        if multi_mag and multi_phase:
+            file.write("lr,L_link_km,alpha,SNR_dB,mag_ER,phase_ER,SER")
+        else:
+            file.write("lr,L_link_km,alpha,SNR_dB,SER")
+
 def print_save_summary(y_ideal, y_hat, multi_mag, multi_phase, lr, L_link, alpha, SNR_dB, path):
     ''' Print and saves the summary of the training process
 
@@ -75,10 +89,10 @@ def print_save_summary(y_ideal, y_hat, multi_mag, multi_phase, lr, L_link, alpha
         SERs = [SER]
     
     with open(path, 'a') as file:
-        if multi_mag and multi_phase:    
-            file.write(f"lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB}dB --> mag ER:{mag_ER:.10e}, phase ER:{phase_ER:.10e}, SER: {SER:.10e}")
+        if multi_mag and multi_phase:
+            file.write(f"{lr},{L_link*1e-3:.0f},{alpha},{SNR_dB},{mag_ER:.10e},{phase_ER:.10e},{SER:.10e}")
         else:
-            file.write(f"lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB}dB --> SER:{SER:.10e}\n")
+            file.write(f"{lr},{L_link*1e-3:.0f},{alpha},{SNR_dB},{SER:.10e}\n")
     return alphabets, SERs
 
 def save_fig_summary(y, y_hat, multi_mag, multi_phase, alphabets, folder_path, lr, L_link, alpha, SNR_dB):

@@ -108,7 +108,8 @@ lr_save_fig = lr_steps
 
 checkpoint_per_epoch = 100
 
-folder_path = io_tool.create_folder(f"results/{mod_format}{M:}_odd_samp",0)
+folder_path = io_tool.create_folder(f"results/{mod_format}{M:}_sym",0)
+io_tool.init_summary_file(f"{folder_path}/SER_results.txt")
 for lr in lr_steps:
     for L_link in L_link_steps:
         for alpha in alpha_steps:
