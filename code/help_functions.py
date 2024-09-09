@@ -254,7 +254,7 @@ def DD_1sym_ISI(x, h0=1, h1=1/2, device='cpu'):
     y_1sym_ISI[:,:,0::2] = torch.square(torch.abs(h1*x+h1*torch.roll(x, 1, dims=-1)))
     return y_1sym_ISI
 
-def create_ideal_y(u, multi_mag, multi_phase, h0=1, h_rx=1):
+def create_ideal_y(u, multi_mag, multi_phase, h0=1, h_rx=1):    # documentation
     if not multi_mag:
         return torch.angle(u)
     if not multi_phase:
@@ -362,3 +362,14 @@ def calc_progress(y_ideal, y_hat, multi_mag, multi_phase):
         alphabets = [alphabet]
         SERs = [SER]
     return alphabets, SERs
+
+def get_MI(u, y_hat, constellation, multi_mag, multi_phase, h0=1, h_rx=1):
+
+    pass
+
+def y_hat_2_u_hat(y_hat, multi_mag, multi_phase, h0=1, h_rx=1):   # documentation
+    if not multi_mag:
+        return torch.exp(1j*y_hat)
+    if not multi_phase:
+        return torch.sqrt(y_hat/h_rx)/h0
+    return torch.sqrt(y_hat[:,0,:]/h_rx)/h0*torch.exp(1j*y_hat[:,1,:])
