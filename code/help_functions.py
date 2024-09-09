@@ -3,7 +3,8 @@ import torch
 import matplotlib.pyplot as plt
 import matplotlib.axes as axes
 
-from torch.nn.functional import conv1d
+from torch.nn.functional import conv1d, cross_entropy
+from scipy.special import xlogy
 
 import DD_system
 import Differential_encoder
@@ -299,9 +300,13 @@ def min_distance_dec(alphabet, Rx):
     Arguments:
     alphabet:   1D tensor with the elements to determine the minimum distance
     Rx:         tensor with the symbols to decode (arbitrary size)
+
+    Return:
+    hard_dec_idx:   index if the symbol in alphabet
+    sym_hat:        decoded symbols
     '''
     hard_dec_idx = torch.argmin(torch.abs(alphabet - Rx[...,None]), dim=-1)
-    return alphabet[hard_dec_idx]
+    return hard_dec_idx, alphabet[hard_dec_idx]
 
 def decode_and_ER(Tx, Rx, precision=5):
     ''' Decodes under minimum distance criteria and calculates the error rate between Tx and Rx
@@ -315,7 +320,7 @@ def decode_and_ER(Tx, Rx, precision=5):
     decoding alphabet (1D tensor), error rate
     '''
     alphabet = torch.unique(torch.round(torch.flatten(Tx), decimals=precision))
-    Rx_deco = min_distance_dec(alphabet, Rx)
+    _, Rx_deco = min_distance_dec(alphabet, Rx)
     return alphabet, get_ER(Tx,Rx_deco)
 
 def decode_and_ER_mag_phase(Tx, Rx, precision=5):
@@ -335,7 +340,7 @@ def decode_and_ER_mag_phase(Tx, Rx, precision=5):
     alphabet = (alphabet_mag*torch.exp(1j*alphabet_phase)[...,None]).flatten()
     Tx = mag_phase_2_complex(Tx)
     Rx = mag_phase_2_complex(Rx)
-    Rx_deco = min_distance_dec(alphabet, Rx)
+    _, Rx_deco = min_distance_dec(alphabet, Rx)
     return alphabet, get_ER(Tx,Rx_deco)
 
 def calc_progress(y_ideal, y_hat, multi_mag, multi_phase):
@@ -363,13 +368,39 @@ def calc_progress(y_ideal, y_hat, multi_mag, multi_phase):
         SERs = [SER]
     return alphabets, SERs
 
-def get_MI(u, y_hat, constellation, multi_mag, multi_phase, h0=1, h_rx=1):
+def get_MI(u, u_hat, constellation):    # documentation
+    u_idx, _ = min_distance_dec(constellation, u.flatten())
+    u_hat_idx, _ = min_distance_dec(constellation, u.flatten())
+    
+    const_size = constellation.numel()
+    N_sym = u_idx.numel()
+    MI = 0
+    p_r_given_t_mat = np.zeros((const_size,const_size))
+    p_t_vec = np.zeros(const_size)
+    p_r_vec = np.zeros(const_size)
 
-    pass
+    for t in range(const_size):
+        p_t_vec[t] = np.count_nonzero(u_idx == t)/N_sym
+        for r in range(const_size):
+            if p_t_vec[t] != 0:
+                p_r_given_t_mat[r,t] = np.count_nonzero(np.logical_and(u_idx == t, u_hat_idx == r))/np.count_nonzero(u_idx == t)
+            else:
+                p_r_given_t_mat[r,t] = 0
+        
+    for r in range(const_size):
+        p_r_vec[r] = np.sum([p_r_given_t_mat[r,t]*p_t_vec[t] for t in range(const_size)])
+    
+    for t in range(const_size):
+        for r in range(const_size):
+            p_r_and_t = np.count_nonzero(np.logical_and(u_idx == t, u_hat_idx == r))/N_sym
+            MI +=  xlogy(p_r_and_t,p_r_given_t_mat[r,t])/np.log(2)-xlogy(p_r_and_t,p_r_vec[r])/np.log(2)
+    return MI
+
+    return 0
 
 def y_hat_2_u_hat(y_hat, multi_mag, multi_phase, h0=1, h_rx=1):   # documentation
     if not multi_mag:
         return torch.exp(1j*y_hat)
     if not multi_phase:
-        return torch.sqrt(y_hat/h_rx)/h0
-    return torch.sqrt(y_hat[:,0,:]/h_rx)/h0*torch.exp(1j*y_hat[:,1,:])
+        return torch.sqrt(torch.abs(y_hat)/h_rx)/torch.abs(h0)
+    return torch.sqrt(torch.abs(y_hat[:,0,:])/h_rx)/torch.abs(h0)*torch.exp(1j*y_hat[:,1,:])
