@@ -50,19 +50,21 @@ def train_CNN():
             optimizer.zero_grad()
             loss_evolution.append(loss.detach().cpu().numpy())
             if (i+1)%(batches_per_epoch//checkpoint_per_epoch) == 0:
-                _, SERs = hlp.calc_progress(y_ideal.detach().cpu(), y_hat.detach().cpu(), dd_system.multi_mag_const, dd_system.multi_phase_const)
-                scheduler.step(sum(SERs))
-                curr_lr = scheduler.get_last_lr()
-                u_hat = hlp.y_hat_2_u_hat(y_hat.detach().cpu(), dd_system.multi_mag_const, dd_system.multi_phase_const, h0=dd_system.tx_filt[0,0,N_taps//2], h_rx=torch.max(dd_system.rx_filt))
-                u = u[:,:,1:].detach().cpu()
-                MI = hlp.get_MI(u, u_hat, dd_system.constellation.detach().cpu())
-
-                io_tool.print_progress(dd_system.multi_mag_const, dd_system.multi_phase_const, batch_size,
-                                       (i+1)/batches_per_epoch, curr_lr, loss_evolution[-1], SERs, MI)
-                if save_progress:
-                    io_tool.save_progress(progress_file_path, dd_system.multi_mag_const, dd_system.multi_phase_const,
-                                          batch_size, (i+1)/batches_per_epoch, curr_lr, loss_evolution[-1], SERs, MI)
+                checkpoint_tasks(y_ideal, y_hat, batch_size, (i+1)/batches_per_epoch, loss_evolution[-1])
         print()
+
+def checkpoint_tasks(y_ideal, y_hat, batch_size, progress, loss):
+    _, SERs = hlp.calc_progress(y_ideal.detach().cpu(), y_hat.detach().cpu(), dd_system.multi_mag_const, dd_system.multi_phase_const)
+    scheduler.step(sum(SERs))
+    curr_lr = scheduler.get_last_lr()
+    u_hat = hlp.y_hat_2_u_hat(y_hat.detach().cpu(), dd_system.multi_mag_const, dd_system.multi_phase_const, h0=dd_system.tx_filt[0,0,N_taps//2], h_rx=torch.max(dd_system.rx_filt))
+    u = u[:,:,1:].detach().cpu()
+    MI = hlp.get_MI(u, u_hat, dd_system.constellation.detach().cpu())
+    io_tool.print_progress(dd_system.multi_mag_const, dd_system.multi_phase_const, batch_size,
+                            progress, curr_lr, loss, SERs, MI)
+    if save_progress:
+        io_tool.save_progress(progress_file_path, dd_system.multi_mag_const, dd_system.multi_phase_const,
+                                batch_size, progress, curr_lr, loss, SERs, MI)
 
 def eval_n_save_CNN():
     u, _, y = dd_system.simulate_transmission(100, N_sym, SNR_dB)
@@ -83,7 +85,7 @@ def eval_n_save_CNN():
     if SNR_dB in SNR_save_fig and lr in lr_save_fig and L_link in L_link_save_fig and alpha in alpha_save_fig:
         io_tool.save_fig_summary(y.detach().cpu(), y_hat, dd_system.multi_mag_const, dd_system.multi_phase_const, alphabets,
                              folder_path, lr, L_link, alpha, SNR_dB)
-        
+
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("We are using the following device for learning:",device)
