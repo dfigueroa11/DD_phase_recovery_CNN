@@ -3,8 +3,9 @@ import torch
 import matplotlib.pyplot as plt
 import matplotlib.axes as axes
 
-from torch.nn.functional import conv1d, cross_entropy
-from scipy.special import xlogy
+from torch.nn.functional import conv1d
+from sklearn.metrics import mutual_info_score
+
 
 import DD_system
 import Differential_encoder
@@ -368,37 +369,14 @@ def calc_progress(y_ideal, y_hat, multi_mag, multi_phase):
         SERs = [SER]
     return alphabets, SERs
 
-def get_MI(u, u_hat, constellation):    # documentation
+def get_MI(u, u_hat, constellation):
+    ''' Calculates the mutual information between u and u_hat (1D arrays)
+    '''
     u_idx, _ = min_distance_dec(constellation, u.flatten())
-    u_hat_idx, _ = min_distance_dec(constellation, u.flatten())
-    
-    const_size = constellation.numel()
-    N_sym = u_idx.numel()
-    MI = 0
-    p_r_given_t_mat = np.zeros((const_size,const_size))
-    p_t_vec = np.zeros(const_size)
-    p_r_vec = np.zeros(const_size)
+    u_hat_idx, _ = min_distance_dec(constellation, u_hat.flatten())
+    return mutual_info_score(u_hat_idx, u_idx)/np.log(2)
 
-    for t in range(const_size):
-        p_t_vec[t] = np.count_nonzero(u_idx == t)/N_sym
-        for r in range(const_size):
-            if p_t_vec[t] != 0:
-                p_r_given_t_mat[r,t] = np.count_nonzero(np.logical_and(u_idx == t, u_hat_idx == r))/np.count_nonzero(u_idx == t)
-            else:
-                p_r_given_t_mat[r,t] = 0
-        
-    for r in range(const_size):
-        p_r_vec[r] = np.sum([p_r_given_t_mat[r,t]*p_t_vec[t] for t in range(const_size)])
-    
-    for t in range(const_size):
-        for r in range(const_size):
-            p_r_and_t = np.count_nonzero(np.logical_and(u_idx == t, u_hat_idx == r))/N_sym
-            MI +=  xlogy(p_r_and_t,p_r_given_t_mat[r,t])/np.log(2)-xlogy(p_r_and_t,p_r_vec[r])/np.log(2)
-    return MI
-
-    return 0
-
-def y_hat_2_u_hat(y_hat, multi_mag, multi_phase, h0=1, h_rx=1):   # documentation
+def y_hat_2_u_hat(y_hat, multi_mag, multi_phase, h0=1, h_rx=1):
     if not multi_mag:
         return torch.exp(1j*y_hat)
     if not multi_phase:
