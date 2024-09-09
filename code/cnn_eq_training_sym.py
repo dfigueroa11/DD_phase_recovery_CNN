@@ -53,11 +53,15 @@ def train_CNN():
                 _, SERs = hlp.calc_progress(y_ideal.detach().cpu(), y_hat.detach().cpu(), dd_system.multi_mag_const, dd_system.multi_phase_const)
                 scheduler.step(sum(SERs))
                 curr_lr = scheduler.get_last_lr()
+                u_hat = hlp.y_hat_2_u_hat(y_hat.detach().cpu(), dd_system.multi_mag_const, dd_system.multi_phase_const, h0=dd_system.tx_filt[0,0,N_taps//2], h_rx=torch.max(dd_system.rx_filt))
+                u = u[:,:,1:].detach().cpu()
+                MI = hlp.get_MI(u, u_hat, dd_system.constellation.detach().cpu())
+
                 io_tool.print_progress(dd_system.multi_mag_const, dd_system.multi_phase_const, batch_size,
-                                       (i+1)/batches_per_epoch, curr_lr, loss_evolution[-1], SERs)
+                                       (i+1)/batches_per_epoch, curr_lr, loss_evolution[-1], SERs, MI)
                 if save_progress:
                     io_tool.save_progress(progress_file_path, dd_system.multi_mag_const, dd_system.multi_phase_const,
-                                          batch_size, (i+1)/batches_per_epoch, curr_lr, loss_evolution[-1], SERs)
+                                          batch_size, (i+1)/batches_per_epoch, curr_lr, loss_evolution[-1], SERs, MI)
         print()
 
 def eval_n_save_CNN():
@@ -67,11 +71,14 @@ def eval_n_save_CNN():
 
     y_ideal = hlp.create_ideal_y(u, dd_system.multi_mag_const, dd_system.multi_phase_const,
                                  h0=dd_system.tx_filt[0,0,N_taps//2], h_rx=torch.max(dd_system.rx_filt)).detach().cpu()[:,:,1:]
+    alphabets, SERs = hlp.calc_progress(y_ideal, y_hat, dd_system.multi_mag_const, dd_system.multi_phase_const)    
     
-    alphabets, SERs = hlp.calc_progress(y_ideal.detach().cpu(), y_hat.detach().cpu(), dd_system.multi_mag_const, dd_system.multi_phase_const)
-    
+    u_hat = hlp.y_hat_2_u_hat(y_hat, dd_system.multi_mag_const, dd_system.multi_phase_const, h0=dd_system.tx_filt[0,0,N_taps//2], h_rx=torch.max(dd_system.rx_filt))
+    u = u[:,:,1:].detach().cpu()
+    MI = hlp.get_MI(u, u_hat, dd_system.constellation.detach().cpu())
+
     io_tool.print_save_summary(f"{folder_path}/SER_results.txt", dd_system.multi_mag_const, dd_system.multi_phase_const,
-                               lr, L_link, alpha, SNR_dB, SERs)
+                               lr, L_link, alpha, SNR_dB, SERs, MI)
 
     if SNR_dB in SNR_save_fig and lr in lr_save_fig and L_link in L_link_save_fig and alpha in alpha_save_fig:
         io_tool.save_fig_summary(y.detach().cpu(), y_hat, dd_system.multi_mag_const, dd_system.multi_phase_const, alphabets,

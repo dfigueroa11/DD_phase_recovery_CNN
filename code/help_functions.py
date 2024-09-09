@@ -376,7 +376,7 @@ def get_MI(u, u_hat, constellation):
     u_hat_idx, _ = min_distance_dec(constellation, u_hat.flatten())
     return mutual_info_score(u_hat_idx, u_idx)/np.log(2)
 
-def y_hat_2_u_hat(y_hat, multi_mag, multi_phase, h0=1, h_rx=1):
+def y_hat_2_u_hat(y_hat, multi_mag, multi_phase, h0=1, h_rx=1):     # documentation
     if not multi_mag:
         return torch.exp(1j*y_hat)
     if not multi_phase:
