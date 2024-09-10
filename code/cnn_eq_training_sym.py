@@ -1,10 +1,8 @@
 import torch
 import torch.optim as optim
 from torch.nn import MSELoss 
-import matplotlib.pyplot as plt
 
 import numpy as np
-import sys
 
 import help_functions as hlp
 import in_out_tools as io_tool
@@ -104,9 +102,9 @@ beta2 = -2.168e-26
 alpha_steps = np.arange(0,1)               # for sweep over alpha
 alpha_save_fig = alpha_steps
 L_link_steps = np.arange(0,35,6)*1e3      # for sweep over L_link
-L_link_save_fig = L_link_steps
-SNR_dB_steps = np.arange(5,26,5)                          # for sweep over SNR
-SNR_save_fig = SNR_dB_steps#[[2,-1]]
+L_link_save_fig = L_link_steps[[0,2,-1]]
+SNR_dB_steps = np.arange(-5, 12, 2)                          # for sweep over SNR
+SNR_save_fig = SNR_dB_steps[[0,5,-1]]
 
 ### CNN definition
 num_ch = np.array([1,15,7,1])
@@ -115,8 +113,8 @@ strides = np.array([1,1,2])
 activ_func = torch.nn.ELU()
 
 ### Training hyperparameter
-batches_per_epoch = 700
-batch_size_per_epoch = [10,]
+batches_per_epoch = 300
+batch_size_per_epoch = [100, 300, 500]
 N_sym = 1000
 lr_steps = np.array([0.004])       # for sweep over lr
 lr_save_fig = lr_steps
