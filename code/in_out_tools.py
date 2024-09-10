@@ -68,8 +68,8 @@ def print_progress(multi_mag, multi_phase, batch_size, progress, lr, loss, SERs,
     MI:             Mutual information float
     '''
     if multi_mag and multi_phase:
-        print(f"\tBatch size: {batch_size:>4}  progress: {progress:>6.1%}   lr: {lr[0]:>8.2e}   loss: {loss:>9.3e}   "+
-              f"mag ER: {SERs[0]:>9.3e}   phase ER: {SERs[1]:>9.3e}   SER: {SERs[2]:>9.3e}   MI: {MI:>6.3f}", end='\r')
+        print(f"   Batch size:{batch_size:>4}  prog:{progress:>6.1%}  lr:{lr[0]:>8.2e}  loss:{loss:>9.3e}  "+
+              f"mag ER:{SERs[0]:>8.2e}  ph ER:{SERs[1]:>8.2e}  SER:{SERs[2]:>8.2e}  MI:{MI:>4.2f}", end='\r')
     else:
         print(f"\tBatch size: {batch_size:>4}  progress: {progress:>6.1%}   lr: {lr[0]:>8.2e}   loss: {loss:>9.3e}   SER: {SERs[0]:>9.3e}   MI: {MI:>6.3f}", end='\r')
 
