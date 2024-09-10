@@ -11,7 +11,7 @@ import help_functions as hlp
 def create_folder(path,n_copy):
     '''Creates the folder specified by path, if it already exists append a number to the path and creates the folder'''
     try:
-        real_path = f"{path}_{n_copy}" if n_copy > 0 else path
+        real_path = f"{path}_{n_copy}"
         os.makedirs(real_path)
         return real_path
     except Exception as e:
