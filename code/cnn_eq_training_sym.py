@@ -48,16 +48,16 @@ def train_CNN():
             optimizer.zero_grad()
             loss_evolution.append(loss.detach().cpu().numpy())
             if (i+1)%(batches_per_epoch//checkpoint_per_epoch) == 0:
-                checkpoint_tasks(y_ideal, y_hat, batch_size, (i+1)/batches_per_epoch, loss_evolution[-1])
+                checkpoint_tasks(y_ideal, y_hat, u, batch_size, (i+1)/batches_per_epoch, loss_evolution[-1])
         print()
 
-def checkpoint_tasks(y_ideal, y_hat, batch_size, progress, loss):
+def checkpoint_tasks(y_ideal, y_hat, u, batch_size, progress, loss):
     _, SERs = hlp.calc_progress(y_ideal.detach().cpu(), y_hat.detach().cpu(), dd_system.multi_mag_const, dd_system.multi_phase_const)
     scheduler.step(sum(SERs))
     curr_lr = scheduler.get_last_lr()
-    u_hat = hlp.y_hat_2_u_hat(y_hat.detach().cpu(), dd_system.multi_mag_const, dd_system.multi_phase_const, h0=dd_system.tx_filt[0,0,N_taps//2], h_rx=torch.max(dd_system.rx_filt))
+    u_hat = hlp.y_hat_2_u_hat(y_hat, dd_system.multi_mag_const, dd_system.multi_phase_const, h0=dd_system.tx_filt[0,0,N_taps//2], h_rx=torch.max(dd_system.rx_filt))
     u = u[:,:,1:].detach().cpu()
-    MI = hlp.get_MI(u, u_hat, dd_system.constellation.detach().cpu())
+    MI = hlp.get_MI(u, u_hat.detach().cpu(), dd_system.constellation.detach().cpu())
     io_tool.print_progress(dd_system.multi_mag_const, dd_system.multi_phase_const, batch_size,
                             progress, curr_lr, loss, SERs, MI)
     if save_progress:
@@ -67,21 +67,21 @@ def checkpoint_tasks(y_ideal, y_hat, batch_size, progress, loss):
 def eval_n_save_CNN():
     u, _, y = dd_system.simulate_transmission(100, N_sym, SNR_dB)
     cnn_equalizer.eval()
-    y_hat = cnn_equalizer(y).detach().cpu()[:,:,1:]
+    y_hat = cnn_equalizer(y)[:,:,1:]
 
     y_ideal = hlp.create_ideal_y(u, dd_system.multi_mag_const, dd_system.multi_phase_const,
                                  h0=dd_system.tx_filt[0,0,N_taps//2], h_rx=torch.max(dd_system.rx_filt)).detach().cpu()[:,:,1:]
-    alphabets, SERs = hlp.calc_progress(y_ideal, y_hat, dd_system.multi_mag_const, dd_system.multi_phase_const)    
+    alphabets, SERs = hlp.calc_progress(y_ideal, y_hat.detach().cpu(), dd_system.multi_mag_const, dd_system.multi_phase_const)    
     
     u_hat = hlp.y_hat_2_u_hat(y_hat, dd_system.multi_mag_const, dd_system.multi_phase_const, h0=dd_system.tx_filt[0,0,N_taps//2], h_rx=torch.max(dd_system.rx_filt))
     u = u[:,:,1:].detach().cpu()
-    MI = hlp.get_MI(u, u_hat, dd_system.constellation.detach().cpu())
+    MI = hlp.get_MI(u, u_hat.detach().cpu(), dd_system.constellation.detach().cpu())
 
     io_tool.print_save_summary(f"{folder_path}/SER_results.txt", dd_system.multi_mag_const, dd_system.multi_phase_const,
                                lr, L_link, alpha, SNR_dB, SERs, MI)
 
     if SNR_dB in SNR_save_fig and lr in lr_save_fig and L_link in L_link_save_fig and alpha in alpha_save_fig:
-        io_tool.save_fig_summary(y.detach().cpu(), y_hat, dd_system.multi_mag_const, dd_system.multi_phase_const, alphabets,
+        io_tool.save_fig_summary(y.detach().cpu(), y_hat.detach().cpu(), dd_system.multi_mag_const, dd_system.multi_phase_const, alphabets,
                              folder_path, lr, L_link, alpha, SNR_dB)
 
 
@@ -129,7 +129,7 @@ for lr in lr_steps:
     for L_link in L_link_steps:
         for alpha in alpha_steps:
             for SNR_dB in SNR_dB_steps:
-                print(f'training model with lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB} dB')
+                print(f'training model with lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB} dB, for {mod_format}-{M}')
                 dd_system = initialize_dd_system()
                 cnn_equalizer, optimizer, scheduler = initialize_CNN_optimizer(lr)
                 if save_progress:
