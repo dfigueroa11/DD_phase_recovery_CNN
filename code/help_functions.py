@@ -256,12 +256,43 @@ def DD_1sym_ISI(x, h0=1, h1=1/2, device='cpu'):
     y_1sym_ISI[:,:,0::2] = torch.square(torch.abs(h1*x+h1*torch.roll(x, 1, dims=-1)))
     return y_1sym_ISI
 
-def create_ideal_y(u, multi_mag, multi_phase, h0=1, h_rx=1):    # documentation
+def create_ideal_y(u, multi_mag, multi_phase, h0_tx=1, h0_rx=1):
+    ''' creates the ideal output of the CNN for given symbols u
+
+    Arguments:
+    u:              transmitted symbols estimates (shape (batch_size, 1, N_sym))
+    multi_mag:      whether the constellation have multiple magnitudes or not
+    multi_phase:    whether the constellation have multiple phases or not
+    h0_tx:          center tap of the transmitter filter, used to scale y_hat properly
+    h0_rx:          center tap of the receiver filter, used to scale y_hat properly
+
+    Returns:
+    y:              ideal output of CNN (shape (batch_size, 1 or 2, N_sym) depending on multi_mag, multi_phase)
+    '''
     if not multi_mag:
         return torch.angle(u)
     if not multi_phase:
-        return torch.square(torch.abs(h0*u))*h_rx
-    return torch.cat((torch.square(torch.abs(h0*u))*h_rx,torch.angle(u)), dim=1)
+        return torch.square(torch.abs(h0_tx*u))*h0_rx
+    return torch.cat((torch.square(torch.abs(h0_tx*u))*h0_rx,torch.angle(u)), dim=1)
+
+def y_hat_2_u_hat(y_hat, multi_mag, multi_phase, h0_tx=1, h0_rx=1):
+    ''' Converts the output of the CNN to the estimates of the transmitted symbols u
+
+    Arguments:
+    y_hat:          output of the CNN (shape (batch_size, 1 or 2, N_sym) depending on multi_mag, multi_phase)
+    multi_mag:      whether the constellation have multiple magnitudes or not
+    multi_phase:    whether the constellation have multiple phases or not
+    h0_tx:          center tap of the transmitter filter, used to scale y_hat properly
+    h0_rx:          center tap of the receiver filter, used to scale y_hat properly
+
+    Returns:
+    u_hat:          transmitted symbols estimates (shape (batch_size, 1, N_sym))
+    '''
+    if not multi_mag:
+        return torch.exp(1j*y_hat)
+    if not multi_phase:
+        return torch.sqrt(torch.abs(y_hat)/h0_rx)/torch.abs(h0_tx)
+    return torch.sqrt(torch.abs(y_hat[:,0,:])/h0_rx)/torch.abs(h0_tx)*torch.exp(1j*y_hat[:,1,:])
 
 def abs_phase_diff(x, dim=-1):
     '''Computes the phase difference between adjacent symbols
@@ -348,7 +379,7 @@ def calc_progress(y_ideal, y_hat, multi_mag, multi_phase):
     '''Print the training progress
 
     Arguments:
-    y_ideal:        Tensor containing the ideal magnitudes and phase differences (shape (batch_size, 2/1, N_sym) depending on multi_mag, multi_phase)
+    y_ideal:        Tensor containing the ideal magnitudes and phase differences (shape (batch_size, 1 or 2, N_sym) depending on multi_mag, multi_phase)
     y_hat:          output of the CNN (same shape as y_ideal)
     multi_mag:      whether the constellation have multiple magnitudes or not
     multi_phase:    whether the constellation have multiple phases or not
@@ -375,10 +406,3 @@ def get_MI(u, u_hat, constellation):
     u_idx, _ = min_distance_dec(constellation, u.flatten())
     u_hat_idx, _ = min_distance_dec(constellation, u_hat.flatten())
     return mutual_info_score(u_hat_idx, u_idx)/np.log(2)
-
-def y_hat_2_u_hat(y_hat, multi_mag, multi_phase, h0=1, h_rx=1):     # documentation
-    if not multi_mag:
-        return torch.exp(1j*y_hat)
-    if not multi_phase:
-        return torch.sqrt(torch.abs(y_hat)/h_rx)/torch.abs(h0)
-    return torch.sqrt(torch.abs(y_hat[:,0,:])/h_rx)/torch.abs(h0)*torch.exp(1j*y_hat[:,1,:])
