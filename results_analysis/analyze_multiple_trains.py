@@ -75,7 +75,7 @@ def save_best_images(data, idx, source_path, result_path, folder):
 
 
 
-def analyze_ser_txt(num_folders, path, path_best, folder, result_path):
+def analyze_ser_txt(num_folders, path, path_post_processing, folder, result_path):
     all_data = read_all_data(num_folders, path, folder, "SER_results.txt")
     all_data = find_replace_non_convergence(all_data, threshold=1e-4)
     data, idx = pick_max_min_mean_data(all_data)
@@ -83,7 +83,7 @@ def analyze_ser_txt(num_folders, path, path_best, folder, result_path):
     write_ser_txt(data, conv_rate, f"{path}/{folder}_{0}", result_path)
     return idx
 
-def analyze_progress_txt(L_link_steps, SNR_dB_steps, num_folders, path, path_best, folder, result_path):
+def analyze_progress_txt(L_link_steps, SNR_dB_steps, num_folders, path, path_post_processing, folder, result_path):
     for L_link in L_link_steps:
         for SNR in SNR_dB_steps:
             file_name = f"progress_lr0p004_Llink{L_link}km_alpha0p0_{SNR}dB.txt"
@@ -95,14 +95,14 @@ def analyze_progress_txt(L_link_steps, SNR_dB_steps, num_folders, path, path_bes
 
 if __name__=="__main__":
     path = "/Users/diegofigueroa/Desktop/results"
-    path_best = f"{path}_best"
+    path_post_processing = f"{path}_post_processing"
 
     folders = ["PAM2_sym","ASK4_sym","PAM4_sym","ASK2_sym","QAM4_sym"]
     L_link_steps = np.arange(0,35,6)
     SNR_dB_steps = np.arange(-5, 12, 2)
 
     for folder in folders:
-        result_path = create_results_folder(f"{path_best}/{folder}",0)
-        # analyze_ser_txt(5, path, path_best, folder, result_path)
-        analyze_progress_txt(L_link_steps, SNR_dB_steps, 5, path, path_best, folder, result_path)
-        # # save_best_images(best_ser_data, best_idx, result_path, folder)
+        result_path = create_results_folder(f"{path_post_processing}/{folder}",0)
+        analyze_ser_txt(5, path, path_post_processing, folder, result_path)
+        analyze_progress_txt(L_link_steps, SNR_dB_steps, 5, path, path_post_processing, folder, result_path)
+        # save_best_worst_images(best_ser_data, best_idx, result_path, folder)
