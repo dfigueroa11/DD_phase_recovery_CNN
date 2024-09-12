@@ -25,9 +25,15 @@ def find_replace_non_convergence(all_data, threshold):
     return all_data
 
 def pick_max_min_mean_data(all_data):
-    min_data, min_idx = np.nanmin(all_data, axis=0), np.nanargmin(all_data,axis=0)
-    max_data, max_idx = np.nanmax(all_data, axis=0), np.nanargmax(all_data,axis=0)
-    mean_data = np.nanmean(all_data, axis=0)
+    try:
+        min_data, min_idx = np.nanmin(all_data, axis=0), np.nanargmin(all_data,axis=0)
+        max_data, max_idx = np.nanmax(all_data, axis=0), np.nanargmax(all_data,axis=0)
+        mean_data = np.nanmean(all_data, axis=0)
+    except ValueError :
+        min_data, min_idx = np.nanmin(all_data, axis=0), np.zeros_like(all_data[0,:,:])
+        max_data, max_idx = np.nanmax(all_data, axis=0), np.zeros_like(all_data[0,:,:])
+        mean_data = np.nanmean(all_data, axis=0)
+
     return np.stack(np.stack([min_data, mean_data, max_data])), np.stack([min_idx, max_idx])
 
 def find_convergence_rate(all_data):
@@ -37,7 +43,7 @@ def write_ser_txt(data, conv_rate, path_source, path_destination):
     with open(f'{path_source}/SER_results.txt', 'r') as source_file:
         first_line = source_file.readline()
     with open(f"{path_destination}/SER_results.txt", 'w') as file:
-        file.write(first_line+",conv_rate")
+        file.write(first_line[:-1]+",conv_rate\n")
         for i in range(data.shape[1]):
             line = f"{data[0,i,0]},{data[0,i,1]},{data[0,i,2]},{data[0,i,3]}"
             for j in range(4, data.shape[-1]):
@@ -60,7 +66,7 @@ def save_best_images(data, idx, result_path, folder):
 path = "/Users/diegofigueroa/Desktop/results"
 path_best = f"{path}_best"
 
-folders = ["PAM2_sym"]
+folders = ["PAM2_sym","ASK4_sym","PAM4_sym","ASK2_sym","QAM4_sym"]
 
 all_data = []
 
