@@ -39,15 +39,14 @@ def pick_max_min_mean_data(all_data):
 def find_convergence_rate(all_data):
     return 1-np.mean(np.isnan(all_data[:,:,-1]),axis=0)
 
-def write_ser_txt(data, conv_rate, path_source, path_destination):
-    with open(f'{path_source}/SER_results.txt', 'r') as source_file:
-        first_line = source_file.readline()
+def write_ser_txt(data, conv_rate, path_destination):
     with open(f"{path_destination}/SER_results.txt", 'w') as file:
-        file.write(first_line[:-1]+",conv_rate\n")
+        file.write("lr,L_link_km,alpha,SNR_dB,(min_mag_ER,mean_mag_ER,max_mag_ER,min_phase_ER,"+
+                   "mean_phase_ER,max_phase_ER),min_SER,mean_SER,max_SER,min_MI,mean_MI,max_MI,conv_rate\n")
         for i in range(data.shape[1]):
             line = f"{data[0,i,0]},{data[0,i,1]},{data[0,i,2]},{data[0,i,3]}"
             for j in range(4, data.shape[-1]):
-                line += f",[{data[0,i,j]:.10e},{data[1,i,j]:.10e},{data[2,i,j]:.10e}]"
+                line += f",{data[0,i,j]:.10e},{data[1,i,j]:.10e},{data[2,i,j]:.10e}"
             line += f",{conv_rate[i]}"
             file.write(f"{line}\n")
 
@@ -75,12 +74,12 @@ def save_best_images(data, idx, source_path, result_path, folder):
 
 
 
-def analyze_ser_txt(num_folders, path, path_post_processing, folder, result_path):
+def analyze_ser_txt(num_folders, path, folder, result_path):
     all_data = read_all_data(num_folders, path, folder, "SER_results.txt")
     all_data = find_replace_non_convergence(all_data, threshold=1e-4)
     data, idx = pick_max_min_mean_data(all_data)
     conv_rate = find_convergence_rate(all_data)
-    write_ser_txt(data, conv_rate, f"{path}/{folder}_{0}", result_path)
+    write_ser_txt(data, conv_rate, result_path)
     return idx
 
 def analyze_progress_txt(L_link_steps, SNR_dB_steps, num_folders, path, path_post_processing, folder, result_path):
@@ -103,6 +102,6 @@ if __name__=="__main__":
 
     for folder in folders:
         result_path = create_results_folder(f"{path_post_processing}/{folder}",0)
-        analyze_ser_txt(5, path, path_post_processing, folder, result_path)
+        analyze_ser_txt(5, path, folder, result_path)
         analyze_progress_txt(L_link_steps, SNR_dB_steps, 5, path, path_post_processing, folder, result_path)
         # save_best_worst_images(best_ser_data, best_idx, result_path, folder)
