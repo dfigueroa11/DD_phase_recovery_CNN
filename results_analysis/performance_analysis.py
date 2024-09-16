@@ -41,24 +41,30 @@ if __name__=="__main__":
     data = np.delete(read_data(path, folder, file_name), (0,2), axis=1)
     if data.shape[-1] > 9:
         data = np.delete(data, (3,4,5,6,7,8), axis=1)
+
     Llink_list = np.unique(data[:,0])
     SNR_list = np.unique(data[:,1])
+    rate_lims = (0,2.1)
+    ser_lims = (1e-3, 1)
+    
     data = np.reshape(data,(Llink_list.size, SNR_list.size,-1))
     ax2: Axes 
     ax1: Axes 
-    fig, ((ax1,ax2),(ax3,ax4)) = plt.subplots(2,2, figsize=(15,9))
-    fig.suptitle(f"{folder} SER and Rate for alpha = 0", fontsize=16)
+    fig, (ax1,ax2) = plt.subplots(1,2, figsize=(15,9))
+    fig.suptitle(f"{folder} SER and Rate vs SNR for alpha = 0", fontsize=16)
     for i, Llink in enumerate(Llink_list):
         plot_curve_range(ax1, SNR_list, data[i,:,5], data[i,:,6], data[i,:,7], f"C{i}", f"Link length {Llink:.0f} km")
         plot_curve_range(ax2, SNR_list, data[i,:,2], data[i,:,3], data[i,:,4], f"C{i}", f"Link length {Llink:.0f} km")
-    rate_ax_setup(ax1, (np.min(SNR_list), np.max(SNR_list)), (0,2.1), 'SNR [dB]', 'upper left')
-    SER_ax_setup(ax2, (np.min(SNR_list), np.max(SNR_list)), (1e-3, 1), 'SNR [dB]', 'lower left')
+    rate_ax_setup(ax1, (np.min(SNR_list), np.max(SNR_list)), rate_lims, 'SNR [dB]', 'upper left')
+    SER_ax_setup(ax2, (np.min(SNR_list), np.max(SNR_list)), ser_lims, 'SNR [dB]', 'lower left')
     
+    fig, (ax1,ax2) = plt.subplots(1,2, figsize=(15,9))
+    fig.suptitle(f"{folder} SER and Rate vs link length for alpha = 0", fontsize=16)
     for i, SNR in enumerate(SNR_list):
-        plot_curve_range(ax3, Llink_list, data[:,i,5], data[:,i,6], data[:,i,7], f"C{i}", f"SNR {SNR:.0f} dB")
-        plot_curve_range(ax4, Llink_list, data[:,i,2], data[:,i,3], data[:,i,4], f"C{i}", f"SNR {SNR:.0f} dB")
-    rate_ax_setup(ax3, (np.min(Llink_list), np.max(Llink_list)), (0,2.1), 'Link length km', 'upper left')
-    SER_ax_setup(ax4, (np.min(Llink_list), np.max(Llink_list)), (1e-3, 1), 'Link length km', 'lower left')
+        plot_curve_range(ax1, Llink_list, data[:,i,5], data[:,i,6], data[:,i,7], f"C{i}", f"SNR {SNR:.0f} dB")
+        plot_curve_range(ax2, Llink_list, data[:,i,2], data[:,i,3], data[:,i,4], f"C{i}", f"SNR {SNR:.0f} dB")
+    rate_ax_setup(ax1, (np.min(Llink_list), np.max(Llink_list)), rate_lims, 'Link length km', 'upper left')
+    SER_ax_setup(ax2, (np.min(Llink_list), np.max(Llink_list)), ser_lims, 'Link length km', 'lower left')
     
 
     plt.show()
