@@ -40,7 +40,7 @@ def train_CNN():
             y_hat = cnn_equalizer(y)[:,:,1:]
             
             y_ideal = hlp.create_ideal_y(u, dd_system.multi_mag_const, dd_system.multi_phase_const,
-                                         h0=dd_system.tx_filt[0,0,N_taps//2], h_rx=torch.max(dd_system.rx_filt))[:,:,1:]
+                                         h0_tx=dd_system.tx_filt[0,0,N_taps//2], h0_rx=torch.max(dd_system.rx_filt))[:,:,1:]
             loss = loss_func(y_ideal, y_hat)
             
             loss.backward()
@@ -55,7 +55,7 @@ def checkpoint_tasks(y_ideal, y_hat, u, batch_size, progress, loss):
     _, SERs = hlp.calc_progress(y_ideal.detach().cpu(), y_hat.detach().cpu(), dd_system.multi_mag_const, dd_system.multi_phase_const)
     scheduler.step(sum(SERs))
     curr_lr = scheduler.get_last_lr()
-    u_hat = hlp.y_hat_2_u_hat(y_hat, dd_system.multi_mag_const, dd_system.multi_phase_const, h0=dd_system.tx_filt[0,0,N_taps//2], h_rx=torch.max(dd_system.rx_filt))
+    u_hat = hlp.y_hat_2_u_hat(y_hat, dd_system.multi_mag_const, dd_system.multi_phase_const, h0_tx=dd_system.tx_filt[0,0,N_taps//2], h0_rx=torch.max(dd_system.rx_filt))
     u = u[:,:,1:].detach().cpu()
     MI = hlp.get_MI(u, u_hat.detach().cpu(), dd_system.constellation.detach().cpu())
     io_tool.print_progress(dd_system.multi_mag_const, dd_system.multi_phase_const, batch_size,
@@ -70,10 +70,10 @@ def eval_n_save_CNN():
     y_hat = cnn_equalizer(y)[:,:,1:]
 
     y_ideal = hlp.create_ideal_y(u, dd_system.multi_mag_const, dd_system.multi_phase_const,
-                                 h0=dd_system.tx_filt[0,0,N_taps//2], h_rx=torch.max(dd_system.rx_filt)).detach().cpu()[:,:,1:]
+                                 h0_tx=dd_system.tx_filt[0,0,N_taps//2], h0_rx=torch.max(dd_system.rx_filt)).detach().cpu()[:,:,1:]
     alphabets, SERs = hlp.calc_progress(y_ideal, y_hat.detach().cpu(), dd_system.multi_mag_const, dd_system.multi_phase_const)    
     
-    u_hat = hlp.y_hat_2_u_hat(y_hat, dd_system.multi_mag_const, dd_system.multi_phase_const, h0=dd_system.tx_filt[0,0,N_taps//2], h_rx=torch.max(dd_system.rx_filt))
+    u_hat = hlp.y_hat_2_u_hat(y_hat, dd_system.multi_mag_const, dd_system.multi_phase_const, h0_tx=dd_system.tx_filt[0,0,N_taps//2], h0_rx=torch.max(dd_system.rx_filt))
     u = u[:,:,1:].detach().cpu()
     MI = hlp.get_MI(u, u_hat.detach().cpu(), dd_system.constellation.detach().cpu())
 
@@ -123,7 +123,7 @@ checkpoint_per_epoch = 100
 save_progress = True
 
 folder_path = io_tool.create_folder(f"results/{mod_format}{M:}_sym",0)
-io_tool.init_summary_file(f"{folder_path}/SER_results.txt")
+io_tool.init_summary_file(f"{folder_path}/results.txt")
 
 for lr in lr_steps:
     for L_link in L_link_steps:
