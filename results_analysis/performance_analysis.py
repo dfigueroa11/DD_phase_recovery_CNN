@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
-def read_data(path, folder, file_name):
-    return np.loadtxt(f"{path}/{folder}/{file_name}", delimiter=",", skiprows=1)
+def read_data(path_file):
+    return np.loadtxt(path_file, delimiter=",", skiprows=1)
 
 def plot_curve_range(ax: Axes, x_data, y_min, y_mean, y_max, color, label):
     ax.plot(x_data, y_mean, label=label, color=color, linewidth=1)
@@ -28,25 +28,16 @@ def SER_ax_setup(ax: Axes, xlim, ylim, xlabel, loc):
     ax.grid(visible=True, which='both')
     ax.legend(loc=loc)
 
-
-
-
-
-
-
-if __name__=="__main__":
-    path = "/Users/diegofigueroa/Desktop/results_post_processing"
-    folder = "ASK4_sym"
-    file_name = "SER_results.txt"
-    data = np.delete(read_data(path, folder, file_name), (0,2), axis=1)
+def make_all_plots(path_file):
+    data = np.delete(read_data(path_file), (0,2), axis=1)
     if data.shape[-1] > 9:
         data = np.delete(data, (3,4,5,6,7,8), axis=1)
 
     Llink_list = np.unique(data[:,0])
     SNR_list = np.unique(data[:,1])
-    rate_lims = (0,2.1)
-    ser_lims = (1e-3, 1)
-    
+    rate_lims = (0,np.ceil(np.max(data[:,7]))*1.05)
+    ser_lims = (1e-4, 1)
+        
     data = np.reshape(data,(Llink_list.size, SNR_list.size,-1))
     ax2: Axes 
     ax1: Axes 
@@ -70,3 +61,10 @@ if __name__=="__main__":
     plt.show()
 
 
+if __name__=="__main__":
+    path = "/Users/diegofigueroa/Desktop/results_post_processing"
+    folder = "ASK4_sym"
+    file_name = "SER_results.txt"
+    path_file = f"{path}/{folder}/{file_name}"
+
+    make_all_plots(path_file)

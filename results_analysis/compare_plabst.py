@@ -50,13 +50,8 @@ def plot_CNN_Plabst_comparison(path_cnn, path_plabst, mod_format):
     plt.show()
 
 
-
-
-
 if __name__=="__main__":
     path_cnn = "/Users/diegofigueroa/Desktop/results_post_processing/ASK2_sym/SER_results.txt"
     path_plabst = "/Users/diegofigueroa/Desktop/Plabst_results/ASK2.txt"
     mod_format = "ASK 2"
     plot_CNN_Plabst_comparison(path_cnn, path_plabst, mod_format)
-
-
