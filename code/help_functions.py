@@ -400,9 +400,12 @@ def calc_progress(y_ideal, y_hat, multi_mag, multi_phase):
         SERs = [SER]
     return alphabets, SERs
 
-def get_MI(u, u_hat, constellation):
-    ''' Calculates the mutual information between u and u_hat (1D arrays)
+def get_MI(u, u_hat, constellation, Ptx_dB):
+    ''' Calculates the mutual information between u and u_hat (1D arrays) after minimum distance 
+    hard decoding with respect to constellation (1D tensor) with a transmit power of Ptx_dB
     '''
+    Ptx_lin = torch.tensor([10**(Ptx_dB/10)], dtype=torch.float32)
+    constellation = torch.sqrt(Ptx_lin)*constellation
     u_idx, _ = min_distance_dec(constellation, u.flatten())
     u_hat_idx, _ = min_distance_dec(constellation, u_hat.flatten())
     return mutual_info_score(u_hat_idx, u_idx)/np.log(2)

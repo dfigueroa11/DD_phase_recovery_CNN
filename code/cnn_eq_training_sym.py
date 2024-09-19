@@ -57,7 +57,7 @@ def checkpoint_tasks(y_ideal, y_hat, u, batch_size, progress, loss):
     curr_lr = scheduler.get_last_lr()
     u_hat = hlp.y_hat_2_u_hat(y_hat, dd_system.multi_mag_const, dd_system.multi_phase_const, h0_tx=dd_system.tx_filt[0,0,N_taps//2], h0_rx=torch.max(dd_system.rx_filt))
     u = u[:,:,1:].detach().cpu()
-    MI = hlp.get_MI(u, u_hat.detach().cpu(), dd_system.constellation.detach().cpu())
+    MI = hlp.get_MI(u, u_hat.detach().cpu(), dd_system.constellation.detach().cpu(), SNR_dB)
     io_tool.print_progress(dd_system.multi_mag_const, dd_system.multi_phase_const, batch_size,
                             progress, curr_lr, loss, SERs, MI)
     if save_progress:
@@ -75,7 +75,7 @@ def eval_n_save_CNN():
     
     u_hat = hlp.y_hat_2_u_hat(y_hat, dd_system.multi_mag_const, dd_system.multi_phase_const, h0_tx=dd_system.tx_filt[0,0,N_taps//2], h0_rx=torch.max(dd_system.rx_filt))
     u = u[:,:,1:].detach().cpu()
-    MI = hlp.get_MI(u, u_hat.detach().cpu(), dd_system.constellation.detach().cpu())
+    MI = hlp.get_MI(u, u_hat.detach().cpu(), dd_system.constellation.detach().cpu(), SNR_dB)
 
     io_tool.print_save_summary(f"{folder_path}/SER_results.txt", dd_system.multi_mag_const, dd_system.multi_phase_const,
                                lr, L_link, alpha, SNR_dB, SERs, MI)
