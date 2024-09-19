@@ -373,7 +373,7 @@ def decode_and_ER_mag_phase(Tx, Rx, precision=5):
     Tx = mag_phase_2_complex(Tx)
     Rx = mag_phase_2_complex(Rx)
     _, Rx_deco = min_distance_dec(alphabet, Rx)
-    return alphabet, get_ER(Tx,Rx_deco)
+    return alphabet, get_ER(Tx,Rx_deco,tol=torch.min(alphabet_mag)/10)
 
 def calc_progress(y_ideal, y_hat, multi_mag, multi_phase):
     '''Print the training progress
