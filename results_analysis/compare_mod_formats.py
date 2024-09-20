@@ -43,7 +43,7 @@ def compare_mod_formats(path_mod1, path_mod2, labels):
     ax1: Axes 
     for i, Llink in enumerate(Llink_list):
         fig, (ax1,ax2) = plt.subplots(1,2, figsize=(15,9))
-        fig.suptitle(f"SER and Rate for Link length {Llink} km", fontsize=16)
+        fig.suptitle(f"{labels[0]} vs {labels[1]} -- Link length {Llink} km", fontsize=16)
         ax1.plot(SNR_list, data_MI[i], label=labels, linewidth=2, marker='o')
         ax2.plot(SNR_list, data_ser[i], label=labels, linewidth=2, marker='o')
         rate_ax_setup(ax1, (np.min(SNR_list), np.max(SNR_list)), rate_lims, 'SNR [dB]', 'upper left')
@@ -54,10 +54,11 @@ def compare_mod_formats(path_mod1, path_mod2, labels):
 
 if __name__=="__main__":
     path = "/Users/diegofigueroa/Desktop/results_post_processing"
-    folders = ["ASK2_sym","PAM2_sym"]
     file_name = "SER_results.txt"
-    path_mod1 = f"{path}/{folders[0]}/{file_name}"
-    path_mod2 = f"{path}/{folders[1]}/{file_name}"
-    labels = ["ASK 2","PAM 2"]
     
-    compare_mod_formats(path_mod1, path_mod2, labels)
+    folders_comp = [["ASK2_sym","PAM2_sym"],["ASK4_sym","PAM4_sym"]]
+    labels_comp = [["ASK 2","PAM 2"],["ASK 4","PAM 4"]]
+    for folders, labels in zip(folders_comp,labels_comp):
+        path_mod1 = f"{path}/{folders[0]}/{file_name}"
+        path_mod2 = f"{path}/{folders[1]}/{file_name}"
+        compare_mod_formats(path_mod1, path_mod2, labels)

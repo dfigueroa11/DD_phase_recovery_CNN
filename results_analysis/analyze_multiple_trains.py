@@ -96,7 +96,7 @@ if __name__=="__main__":
     path = "/Users/diegofigueroa/Desktop/results"
     path_post_processing = f"{path}_post_processing"
 
-    folders = ["PAM2_sym","ASK4_sym","PAM4_sym","ASK2_sym","QAM4_sym"]
+    folders = ["PAM2_sym","ASK4_sym","PAM4_sym","ASK2_sym"]
     L_link_steps = np.arange(0,35,6)
     SNR_dB_steps = np.arange(-5, 12, 2)
 

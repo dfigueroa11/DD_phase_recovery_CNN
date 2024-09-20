@@ -51,7 +51,8 @@ def plot_CNN_Plabst_comparison(path_cnn, path_plabst, mod_format):
 
 
 if __name__=="__main__":
-    path_cnn = "/Users/diegofigueroa/Desktop/results_post_processing/ASK2_sym/SER_results.txt"
-    path_plabst = "/Users/diegofigueroa/Desktop/Plabst_results/ASK2.txt"
-    mod_format = "ASK 2"
-    plot_CNN_Plabst_comparison(path_cnn, path_plabst, mod_format)
+    mod_formats = ["ASK2","ASK4","PAM2","PAM4"]
+    for mod_format in mod_formats:
+        path_cnn = f"/Users/diegofigueroa/Desktop/results_post_processing/{mod_format}_sym/SER_results.txt"
+        path_plabst = f"/Users/diegofigueroa/Desktop/Plabst_results/{mod_format}.txt"
+        plot_CNN_Plabst_comparison(path_cnn, path_plabst, mod_format)
