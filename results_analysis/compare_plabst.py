@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
+from matplotlib.backends.backend_pdf import PdfPages
 
 def read_data(path_file):
     return np.loadtxt(path_file, delimiter=",", skiprows=1)
@@ -22,7 +23,7 @@ def SER_ax_setup(ax: Axes, xlim, ylim, xlabel, loc):
     ax.grid(visible=True, which='both')
     ax.legend(loc=loc)
 
-def plot_CNN_Plabst_comparison(path_cnn, path_plabst, mod_format):
+def plot_CNN_Plabst_comparison(path_cnn, path_plabst, mod_format, save_fig=False):
     data_cnn = np.delete(read_data(path_cnn), (0,2), axis=1)
     data_plabst = (read_data(path_plabst))
     if data_cnn.shape[-1] > 9:
@@ -37,6 +38,8 @@ def plot_CNN_Plabst_comparison(path_cnn, path_plabst, mod_format):
     ser_lims = (1e-4, 1)
     labels = ["CNN", "SIC (4)", "SDD"]
 
+    if save_fig:
+        pdf = PdfPages(f"{mod_format}.pdf")
     ax2: Axes 
     ax1: Axes 
     for i, Llink in enumerate(Llink_list):
@@ -46,8 +49,13 @@ def plot_CNN_Plabst_comparison(path_cnn, path_plabst, mod_format):
         ax2.plot(SNR_list, data_ser[i], label=labels, linewidth=2, marker='o')
         rate_ax_setup(ax1, (np.min(SNR_list), np.max(SNR_list)), rate_lims, 'SNR [dB]', 'upper left')
         SER_ax_setup(ax2, (np.min(SNR_list), np.max(SNR_list)), ser_lims, 'SNR [dB]', 'lower left')
-    
-    plt.show()
+        if save_fig:
+            pdf.savefig()
+    if save_fig:
+        plt.close()
+        pdf.close()
+    else:
+        plt.show()
 
 
 if __name__=="__main__":
@@ -55,4 +63,4 @@ if __name__=="__main__":
     for mod_format in mod_formats:
         path_cnn = f"/Users/diegofigueroa/Desktop/results_post_processing/{mod_format}_sym/SER_results.txt"
         path_plabst = f"/Users/diegofigueroa/Desktop/Plabst_results/{mod_format}.txt"
-        plot_CNN_Plabst_comparison(path_cnn, path_plabst, mod_format)
+        plot_CNN_Plabst_comparison(path_cnn, path_plabst, mod_format, save_fig=True)

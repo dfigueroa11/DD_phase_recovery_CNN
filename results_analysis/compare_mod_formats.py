@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
+from matplotlib.backends.backend_pdf import PdfPages
 
 def read_data(path_file):
     return np.loadtxt(path_file, delimiter=",", skiprows=1)
@@ -22,7 +23,7 @@ def SER_ax_setup(ax: Axes, xlim, ylim, xlabel, loc):
     ax.grid(visible=True, which='both')
     ax.legend(loc=loc)
 
-def compare_mod_formats(path_mod1, path_mod2, labels):
+def compare_mod_formats(path_mod1, path_mod2, labels, save_fig=False):
     data = []
     data.append(np.delete(read_data(path_mod1), (0,2), axis=1))
     data.append(np.delete(read_data(path_mod2), (0,2), axis=1))
@@ -41,6 +42,8 @@ def compare_mod_formats(path_mod1, path_mod2, labels):
     
     ax2: Axes 
     ax1: Axes 
+    if save_fig:
+        pdf = PdfPages(f"{labels[0]}_vs_{labels[1]}.pdf")
     for i, Llink in enumerate(Llink_list):
         fig, (ax1,ax2) = plt.subplots(1,2, figsize=(15,9))
         fig.suptitle(f"{labels[0]} vs {labels[1]} -- Link length {Llink} km", fontsize=16)
@@ -48,8 +51,13 @@ def compare_mod_formats(path_mod1, path_mod2, labels):
         ax2.plot(SNR_list, data_ser[i], label=labels, linewidth=2, marker='o')
         rate_ax_setup(ax1, (np.min(SNR_list), np.max(SNR_list)), rate_lims, 'SNR [dB]', 'upper left')
         SER_ax_setup(ax2, (np.min(SNR_list), np.max(SNR_list)), ser_lims, 'SNR [dB]', 'lower left')
-
-    plt.show()
+        if save_fig:
+            pdf.savefig()
+    if save_fig:
+        plt.close()
+        pdf.close()
+    else:
+        plt.show()
 
 
 if __name__=="__main__":
@@ -61,4 +69,4 @@ if __name__=="__main__":
     for folders, labels in zip(folders_comp,labels_comp):
         path_mod1 = f"{path}/{folders[0]}/{file_name}"
         path_mod2 = f"{path}/{folders[1]}/{file_name}"
-        compare_mod_formats(path_mod1, path_mod2, labels)
+        compare_mod_formats(path_mod1, path_mod2, labels, save_fig=True)
