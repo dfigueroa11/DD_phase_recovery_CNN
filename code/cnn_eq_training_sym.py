@@ -36,7 +36,7 @@ def train_CNN():
     cnn_equalizer.train()
     for batch_size in batch_size_per_epoch:
         for i in range(batches_per_epoch):
-            u, _, y = dd_system.simulate_transmission(batch_size, N_sym, SNR_dB)
+            _, u, _, y = dd_system.simulate_transmission(batch_size, N_sym, SNR_dB)
             y_hat = cnn_equalizer(y)[:,:,1:]
             
             y_ideal = hlp.create_ideal_y(u, dd_system.multi_mag_const, dd_system.multi_phase_const,
@@ -65,7 +65,7 @@ def checkpoint_tasks(y_ideal, y_hat, u, batch_size, progress, loss):
                                 batch_size, progress, curr_lr, loss, SERs, MI)
 
 def eval_n_save_CNN():
-    u, _, y = dd_system.simulate_transmission(100, N_sym, SNR_dB)
+    _, u, _, y = dd_system.simulate_transmission(100, N_sym, SNR_dB)
     cnn_equalizer.eval()
     y_hat = cnn_equalizer(y)[:,:,1:]
 

@@ -47,12 +47,14 @@ class DD_system():
         Ptx_dB:         transmission power in dB used for the simulation (float)
         
         Returns:
+        ui: the index of the symbols before the differential encoding (Tensor of size (batch_size, 1, N_sym))
         u:  the symbols before the differential encoding (Tensor of size (batch_size, 1, N_sym))
         x:  the symbols after the differential encoding (Tensor of size (batch_size, 1, N_sym)) if diff_encoder is None u = x  
         y:  the samples after the transmission (Tensor of size (batch_size, 1, N_sym*N_os))
         '''
         Ptx_lin = torch.tensor([10**(Ptx_dB/10)], device=self.device, dtype=torch.float32)
-        u = torch.sqrt(Ptx_lin)*self.constellation[torch.randint(torch.numel(self.constellation),[batch_size, 1, N_sym])]
+        ui = torch.randint(torch.numel(self.constellation),[batch_size, 1, N_sym])
+        u = torch.sqrt(Ptx_lin)*self.constellation[ui]
         if self.diff_encoder is not None:
             x = self.diff_encoder.encode(u)
         else:
@@ -62,5 +64,5 @@ class DD_system():
         var_n = torch.tensor([self.N_sim/2], dtype=torch.float32, device=self.device)
         y = z + torch.sqrt(var_n)*torch.randn_like(z)
         y = hlp.convolve(y, self.rx_filt)
-        return u, x, y[:,:,self.d-1::self.d]
+        return ui, u, x, y[:,:,self.d-1::self.d]
     
