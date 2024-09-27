@@ -37,6 +37,7 @@ class DD_system():
         else:
             self.tx_filt = None
         self.rx_filt = hlp.norm_filt(N_sim, rx_filt).view(1,1,-1).to(device)
+        self.N_taps = self.tx_filt.numel()
 
     def simulate_transmission(self, batch_size, N_sym, Ptx_dB):
         ''' Simulates the transmission of B batches and N symbols per batch with the given Ptx

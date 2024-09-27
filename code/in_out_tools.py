@@ -182,7 +182,7 @@ def process_args():
         "-o",
         type=int,
         help="modulation format order",
-        default=4)
+        default=2)
     return parser.parse_args()
 
 def make_file_name(lr, L_link, alpha, SNR_dB):

@@ -6,8 +6,9 @@ import numpy as np
 
 import help_functions as hlp
 import in_out_tools as io_tool
-import DD_system
+from DD_system import DD_system
 import CNN_equalizer
+import loss_functions
 
 def initialize_dd_system():
     return hlp.set_up_DD_system(N_os=N_os, N_sim=N_sim, device=device,
@@ -35,15 +36,16 @@ def train_CNN(loss_function):
     for batch_size in batch_size_per_epoch:
         for i in range(batches_per_epoch):
             u_idx, u, _, y = dd_system.simulate_transmission(batch_size, N_sym, SNR_dB)
-            cnn_out = cnn_equalizer(y)[:,:,1:]
+            cnn_out = cnn_equalizer(y)
             
-            loss = loss_function(u_idx, u, cnn_out)
+            loss = loss_function(u_idx, u, cnn_out, dd_system)
             
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
+            print("works :)")
             if (i+1)%(batches_per_epoch//checkpoint_per_epoch) == 0:
-                checkpoint_tasks(u, cnn_out, u, batch_size, (i+1)/batches_per_epoch, loss.detach().cpu().numpy())
+                pass#checkpoint_tasks(u, cnn_out, u, batch_size, (i+1)/batches_per_epoch, loss.detach().cpu().numpy())
         print()
 
 def checkpoint_tasks(y_ideal, y_hat, u, batch_size, progress, loss):
@@ -130,5 +132,5 @@ for lr in lr_steps:
                 if save_progress:
                     progress_file_path = f"{folder_path}/progress_{io_tool.make_file_name(lr, L_link, alpha, SNR_dB)}.txt"
                     io_tool.init_progress_file(progress_file_path, dd_system.multi_mag_const, dd_system.multi_phase_const)
-                train_CNN()
+                train_CNN(loss_functions.MSE_u_symbols_2_cnn_out)
                 eval_n_save_CNN()

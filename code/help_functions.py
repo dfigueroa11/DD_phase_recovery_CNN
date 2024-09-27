@@ -7,8 +7,9 @@ from torch.nn.functional import conv1d
 from sklearn.metrics import mutual_info_score
 
 
-import DD_system
+from DD_system import DD_system
 import Differential_encoder
+import data_conversion_tools as dconv_tools
 
 def cascade_filters(filt_1, filt_2):
     '''combine 2 filters by multiplication in frequency domain
@@ -182,7 +183,7 @@ def set_up_DD_system(N_os, N_sim, device, **kwargs):
         rx_filt = rcos_filt(0, len(pulse_shape), N_sim, 1/2, dtype=torch.float32)
     else:
         rx_filt = torch.tensor([1.])
-    return DD_system.DD_system(N_os, N_sim, constellation , diff_encoder, pulse_shape, ch_imp_resp, rx_filt, device)
+    return DD_system(N_os, N_sim, constellation , diff_encoder, pulse_shape, ch_imp_resp, rx_filt, device)
 
 def common_constellation(mod, M, dtype=torch.cfloat, sqrt_flag=False):
     '''Returns the constellation specified (1D tensor of size M)
@@ -259,44 +260,6 @@ def DD_1sym_ISI(x, h0=1, h1=1/2, device='cpu'):
     y_1sym_ISI[:,:,0::2] = torch.square(torch.abs(h1*x+h1*torch.roll(x, 1, dims=-1)))
     return y_1sym_ISI
 
-def create_ideal_y(u, multi_mag, multi_phase, h0_tx=1, h0_rx=1):
-    ''' creates the ideal output of the CNN for given symbols u
-
-    Arguments:
-    u:              transmitted symbols estimates (shape (batch_size, 1, N_sym))
-    multi_mag:      whether the constellation have multiple magnitudes or not
-    multi_phase:    whether the constellation have multiple phases or not
-    h0_tx:          center tap of the transmitter filter, used to scale y_hat properly
-    h0_rx:          center tap of the receiver filter, used to scale y_hat properly
-
-    Returns:
-    y:              ideal output of CNN (shape (batch_size, 1 or 2, N_sym) depending on multi_mag, multi_phase)
-    '''
-    if not multi_mag:
-        return torch.angle(u)
-    if not multi_phase:
-        return torch.square(torch.abs(h0_tx*u))*h0_rx
-    return torch.cat((torch.square(torch.abs(h0_tx*u))*h0_rx,torch.angle(u)), dim=1)
-
-def y_hat_2_u_hat(y_hat, multi_mag, multi_phase, h0_tx=1, h0_rx=1):
-    ''' Converts the output of the CNN to the estimates of the transmitted symbols u
-
-    Arguments:
-    y_hat:          output of the CNN (shape (batch_size, 1 or 2, N_sym) depending on multi_mag, multi_phase)
-    multi_mag:      whether the constellation have multiple magnitudes or not
-    multi_phase:    whether the constellation have multiple phases or not
-    h0_tx:          center tap of the transmitter filter, used to scale y_hat properly
-    h0_rx:          center tap of the receiver filter, used to scale y_hat properly
-
-    Returns:
-    u_hat:          transmitted symbols estimates (shape (batch_size, 1, N_sym))
-    '''
-    if not multi_mag:
-        return torch.exp(1j*y_hat)
-    if not multi_phase:
-        return torch.sqrt(torch.abs(y_hat)/h0_rx)/torch.abs(h0_tx)
-    return torch.sqrt(torch.abs(y_hat[:,0,:])/h0_rx)/torch.abs(h0_tx)*torch.exp(1j*y_hat[:,1,:])
-
 def abs_phase_diff(x, dim=-1):
     '''Computes the phase difference between adjacent symbols
     
@@ -308,14 +271,6 @@ def abs_phase_diff(x, dim=-1):
     signal (tensor of size ((batch_size, 1, N_sym))
     '''
     return torch.abs(torch.remainder(torch.abs(torch.diff(torch.angle(x))+torch.pi),2*torch.pi)-torch.pi)
-
-def mag_phase_2_complex(x):
-    ''' Converts from mag phase representation to complex number
-    
-    Argument:
-    x:      Tensor to convert (shape (batch_size, 2, N_sym) [:,0,:] interpreted as mag, [:,1,:] interpreted as phase)
-    '''
-    return x[:,0,:]*torch.exp(1j*x[:,1,:])
 
 def get_ER(Tx, Rx, tol=1e-5):
     ''' Calculate the error rate between Tx and Rx with a given tolerance, that means count
@@ -373,8 +328,8 @@ def decode_and_ER_mag_phase(Tx, Rx, precision=5):
     alphabet_mag = torch.unique(torch.round(torch.flatten(Tx[:,0,:]), decimals=precision))
     alphabet_phase = torch.unique(torch.round(torch.flatten(Tx[:,1,:]), decimals=precision))
     alphabet = (alphabet_mag*torch.exp(1j*alphabet_phase)[...,None]).flatten()
-    Tx = mag_phase_2_complex(Tx)
-    Rx = mag_phase_2_complex(Rx)
+    Tx = dconv_tools.mag_phase_2_complex(Tx)
+    Rx = dconv_tools.mag_phase_2_complex(Rx)
     _, Rx_deco = min_distance_dec(alphabet, Rx)
     return alphabet, get_ER(Tx,Rx_deco,tol=torch.min(alphabet_mag)/10)
 
