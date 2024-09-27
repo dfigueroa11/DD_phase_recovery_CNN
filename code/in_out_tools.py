@@ -176,13 +176,13 @@ def process_args():
         type=str,
         help="modulation format",
         choices=["ASK", "PAM", "DDQAM", "QAM"],
-        default="ASK")
+        default="PAM")
     parser.add_argument(
         "--order",
         "-o",
         type=int,
         help="modulation format order",
-        default=2)
+        default=4)
     return parser.parse_args()
 
 def make_file_name(lr, L_link, alpha, SNR_dB):

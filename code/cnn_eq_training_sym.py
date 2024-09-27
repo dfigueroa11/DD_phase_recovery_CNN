@@ -19,13 +19,20 @@ def initialize_dd_system():
                                 L_link=L_link, R_sym=R_sym, beta2=beta2)
 
 def initialize_CNN_optimizer(lr):
-    groups_list = None
+    groups_list = [1]*len(ker_lens)
     num_ch_aux = num_ch.copy()
+    strides_aux = strides.copy()
+    ker_lens_aux = ker_lens.copy()
     # if modulation have multiple phases and magnitudes stack two CNN in parallel for each component.
     if dd_system.multi_mag_const and dd_system.multi_phase_const:
         groups_list = [1]+[2]*(len(ker_lens)-1)
         num_ch_aux[1:] = num_ch_aux[1:]*2
-    cnn_equalizer = CNN_equalizer.CNN_equalizer(num_ch_aux, ker_lens, strides, activ_func, groups_list)
+    if ce_loss:
+        groups_list.append(1)
+        num_ch_aux = np.append(num_ch_aux,M)
+        strides_aux = np.append(strides_aux,1)
+        ker_lens_aux = np.append(ker_lens_aux, 7)
+    cnn_equalizer = CNN_equalizer.CNN_equalizer(num_ch_aux, ker_lens_aux, strides_aux, activ_func, groups_list)
     cnn_equalizer.to(device)
     optimizer = optim.Adam(cnn_equalizer.parameters(), eps=1e-07, lr=lr)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5)
@@ -104,11 +111,12 @@ SNR_dB_steps = np.arange(-5, 12, 2)                          # for sweep over SN
 SNR_save_fig = SNR_dB_steps[[0,5,-1]]
 
 ### CNN definition
-num_ch = np.array([1,15,7,M])
+num_ch = np.array([1,15,7,1])
 ker_lens = np.array([11,11,7])
 strides = np.array([1,1,2])
 activ_func = torch.nn.ELU()
-
+loss_func = loss_functions.ce_u_symbols_cnn_out
+ce_loss = True
 ### Training hyperparameter
 batches_per_epoch = 300
 batch_size_per_epoch = [100, 300, 500]
@@ -132,5 +140,5 @@ for lr in lr_steps:
                 if save_progress:
                     progress_file_path = f"{folder_path}/progress_{io_tool.make_file_name(lr, L_link, alpha, SNR_dB)}.txt"
                     io_tool.init_progress_file(progress_file_path, dd_system.multi_mag_const, dd_system.multi_phase_const)
-                train_CNN(loss_functions.ce_u_symbols_cnn_out)
+                train_CNN(loss_func)
                 eval_n_save_CNN()
