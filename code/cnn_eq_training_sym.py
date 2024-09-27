@@ -30,25 +30,20 @@ def initialize_CNN_optimizer(lr):
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5)
     return cnn_equalizer, optimizer, scheduler
 
-def train_CNN():
-    loss_evolution = [-1]
-    loss_func = MSELoss(reduction='mean')
+def train_CNN(loss_function):
     cnn_equalizer.train()
     for batch_size in batch_size_per_epoch:
         for i in range(batches_per_epoch):
-            _, u, _, y = dd_system.simulate_transmission(batch_size, N_sym, SNR_dB)
-            y_hat = cnn_equalizer(y)[:,:,1:]
+            u_idx, u, _, y = dd_system.simulate_transmission(batch_size, N_sym, SNR_dB)
+            cnn_out = cnn_equalizer(y)[:,:,1:]
             
-            y_ideal = hlp.create_ideal_y(u, dd_system.multi_mag_const, dd_system.multi_phase_const,
-                                         h0_tx=dd_system.tx_filt[0,0,N_taps//2], h0_rx=torch.max(dd_system.rx_filt))[:,:,1:]
-            loss = loss_func(y_ideal, y_hat)
+            loss = loss_function(u_idx, u, cnn_out)
             
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
-            loss_evolution.append(loss.detach().cpu().numpy())
             if (i+1)%(batches_per_epoch//checkpoint_per_epoch) == 0:
-                checkpoint_tasks(y_ideal, y_hat, u, batch_size, (i+1)/batches_per_epoch, loss_evolution[-1])
+                checkpoint_tasks(u, cnn_out, u, batch_size, (i+1)/batches_per_epoch, loss.detach().cpu().numpy())
         print()
 
 def checkpoint_tasks(y_ideal, y_hat, u, batch_size, progress, loss):
@@ -71,13 +66,13 @@ def eval_n_save_CNN():
 
     y_ideal = hlp.create_ideal_y(u, dd_system.multi_mag_const, dd_system.multi_phase_const,
                                  h0_tx=dd_system.tx_filt[0,0,N_taps//2], h0_rx=torch.max(dd_system.rx_filt)).detach().cpu()[:,:,1:]
-    alphabets, SERs = hlp.calc_progress(y_ideal, y_hat.detach().cpu(), dd_system.multi_mag_const, dd_system.multi_phase_const)    
+    alphabets, SERs = hlp.calc_progress(y_ideal, y_hat.detach().cpu(), dd_system.multi_mag_const, dd_system.multi_phase_const)
     
     u_hat = hlp.y_hat_2_u_hat(y_hat, dd_system.multi_mag_const, dd_system.multi_phase_const, h0_tx=dd_system.tx_filt[0,0,N_taps//2], h0_rx=torch.max(dd_system.rx_filt))
     u = u[:,:,1:].detach().cpu()
     MI = hlp.get_MI(u, u_hat.detach().cpu(), dd_system.constellation.detach().cpu(), SNR_dB)
 
-    io_tool.print_save_summary(f"{folder_path}/SER_results.txt", dd_system.multi_mag_const, dd_system.multi_phase_const,
+    io_tool.print_save_summary(f"{folder_path}/results.txt", dd_system.multi_mag_const, dd_system.multi_phase_const,
                                lr, L_link, alpha, SNR_dB, SERs, MI)
 
     if SNR_dB in SNR_save_fig and lr in lr_save_fig and L_link in L_link_save_fig and alpha in alpha_save_fig:
@@ -122,7 +117,7 @@ lr_save_fig = lr_steps
 checkpoint_per_epoch = 100
 save_progress = True
 
-folder_path = io_tool.create_folder(f"results/{mod_format}{M:}_sym",0)
+folder_path = io_tool.create_folder(f"results/{mod_format}{M:}",0)
 io_tool.init_summary_file(f"{folder_path}/results.txt")
 
 for lr in lr_steps:
