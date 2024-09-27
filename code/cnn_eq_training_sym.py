@@ -104,7 +104,7 @@ SNR_dB_steps = np.arange(-5, 12, 2)                          # for sweep over SN
 SNR_save_fig = SNR_dB_steps[[0,5,-1]]
 
 ### CNN definition
-num_ch = np.array([1,15,7,1])
+num_ch = np.array([1,15,7,M])
 ker_lens = np.array([11,11,7])
 strides = np.array([1,1,2])
 activ_func = torch.nn.ELU()
@@ -132,5 +132,5 @@ for lr in lr_steps:
                 if save_progress:
                     progress_file_path = f"{folder_path}/progress_{io_tool.make_file_name(lr, L_link, alpha, SNR_dB)}.txt"
                     io_tool.init_progress_file(progress_file_path, dd_system.multi_mag_const, dd_system.multi_phase_const)
-                train_CNN(loss_functions.MSE_u_symbols_2_cnn_out)
+                train_CNN(loss_functions.ce_u_symbols_cnn_out)
                 eval_n_save_CNN()

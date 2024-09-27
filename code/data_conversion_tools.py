@@ -72,4 +72,4 @@ def complex_2_SLDmag_phase(u, dd_system: DD_system):
 
 def idx_2_one_hot(idx):
     one_hot = F.one_hot(idx.squeeze(1))
-    return one_hot.permute(0, 2, 1)  # Shape becomes (100, 4, 300)
+    return one_hot.permute(0, 2, 1).to(torch.float32)  # Shape becomes (100, 4, 300)
