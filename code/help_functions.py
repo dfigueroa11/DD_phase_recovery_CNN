@@ -228,13 +228,16 @@ def common_diff_encoder(mod, constellation, device):
     if mod == "PAM":
         return None
     elif mod == "ASK":
-        diff_mapping = torch.tensor([[0,1],[1,0]])
+        def diff_mapping(u_ph_idx):
+            return torch.remainder(torch.cumsum(u_ph_idx, dim=-1),2)
     elif mod == "SQAM":
-        diff_mapping = torch.tensor([[3,0,1,2],[0,1,2,3],[1,2,3,0],[2,3,0,1]])
+        def diff_mapping(u_ph_idx):
+            return torch.remainder(torch.cumsum(u_ph_idx, dim=-1),4)
     elif mod == "QAM":
-        return None
+        def diff_mapping(u_ph_idx):
+            return torch.remainder(torch.cumsum(u_ph_idx, dim=-1),4)
     elif mod == "DDQAM":
-        diff_mapping = torch.tensor([[1,0,3,2],[0,1,2,3],[3,2,1,0],[2,3,0,1]])
+        diff_mapping = torch.tensor([[1,0,3,2],[0,1,2,3],[3,2,1,0],[2,3,0,1]])  ## update
     else:
         raise ValueError("mod should be PAM, ASK, SQAM, QAM or DDQAM")
     return Differential_encoder.Differential_encoder(constellation, diff_mapping, device)

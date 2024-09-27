@@ -18,45 +18,35 @@ class Differential_encoder():
 
     then the phase and magnitude of x_k are given by: 
 
-    x_k_phase_idx = diff_mapping[ phase_to_idx(u_k), phase_to idx(x_k-1) ]
+    x_k_phase_idx = diff_mapping(phase_to_idx(u_k))
     
     angle(x_k) = phase_list[ x_k_phase_idex ]
     
     abs(x_k) = abs(u)
-    
-    where diff_mapping is a (n x n) matrix defining the phase transitions depending on
-    the previous symbol x_k-1 and the current symbol u_k, but in terms of the indexes
-    
-    for example a classic DBPSK is described by:
-    phase_list = [pi,0]
-    diff_mapping = [[1,0],[0,1]] 
     '''
 
     def __init__(self, constellation, diff_mapping, device):
         '''
         Arguments:
         constellation:  constellation alphabet containing the possible symbols (1D tensor)
-        diff_mapping:   square matrix describing the differential encoding (2D tensor ptype int)
+        diff_mapping:   function that apply the differential encoding, given the indices of the phases
         device:         the device to use (cpu or cuda)
         '''
         self.device= device
         self.constellation = constellation.to(device)
-        self.diff_mapping = diff_mapping.to(device)
-        self.phase_list = torch.unique(torch.round(torch.angle(constellation), decimals=10)).view(-1,1).to(device)
+        self.diff_mapping = diff_mapping
+        self.phase_list = torch.torch.unique(torch.round(torch.angle(constellation), decimals=10)).to(device)
+        self.phase_list,_ = torch.sort(torch.remainder(self.phase_list,2*torch.pi))
         
-    def encode(self, u, x0_phase_idx=0): 
+    def encode(self, u): 
         '''
         Apply the differential encoding
 
         Arguments:
-        u:              the incoming symbols (Tensor of size (batch_size, 1, N_sym))
-        x0_phase_idx:   the index of the initial phase (integer, default 0)
+        u:      the incoming symbols (Tensor of size (batch_size, 1, N_sym))
         '''
-        u_phase_idx = torch.argmin(torch.abs(self.phase_list-torch.angle(u)), dim=1, keepdim=True)
-        x = torch.empty_like(u)
-        x_prev_phase_idx = x0_phase_idx*torch.ones(u.size(dim=0), dtype=torch.int)
-        for i in range(u.size(dim=-1)):
-            x_prev_phase_idx = self.diff_mapping[u_phase_idx[:,0,i],x_prev_phase_idx]
-            x[:,:,i] = torch.abs(u[:,:,i])*torch.exp(1j*self.phase_list[x_prev_phase_idx])
+        u_phase_idx = torch.argmin(torch.abs(self.phase_list[...,None]-torch.remainder(torch.angle(u),2*torch.pi)), dim=1, keepdim=True)
+        x_phase_idx = self.diff_mapping(u_phase_idx)
+        x = torch.abs(u)*torch.exp(1j*self.phase_list[x_phase_idx])
         return x
 
