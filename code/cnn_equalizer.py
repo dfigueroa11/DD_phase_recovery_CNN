@@ -1,5 +1,11 @@
 import torch
 import torch.nn as nn
+import data_conversion_tools as dconv_tools
+
+TRAIN_MSE_U_SYMBOLS = 0
+TRAIN_MSE_U_MAG_PHASE = 1
+TRAIN_MSE_U_SLDMAG_PHASE = 2
+TRAIN_CE_U_SYMBOLS = 3
 
 class CNN_equalizer(nn.Module):
     '''
@@ -40,3 +46,7 @@ class CNN_equalizer(nn.Module):
         out = self.conv_layers[-1](out)
         return out
     
+cnn_out_2_u_hat_funcs = {TRAIN_CE_U_SYMBOLS: dconv_tools.mag_phase_2_complex,
+                         TRAIN_MSE_U_MAG_PHASE: dconv_tools.mag_phase_2_complex,
+                         TRAIN_MSE_U_SLDMAG_PHASE: dconv_tools.SLDmag_phase_2_complex,
+                         TRAIN_CE_U_SYMBOLS: dconv_tools.APPs_2_u}
