@@ -70,20 +70,17 @@ def checkpoint_tasks(y, u, cnn_out, batch_size, progress, loss):
 def eval_n_save_CNN():
     _, u, _, y = dd_system.simulate_transmission(100, N_sym, SNR_dB)
     cnn_equalizer.eval()
-    cnn_out = cnn_equalizer(y)[:,:,1:]
+    cnn_out = cnn_equalizer(y)
 
-    y = hlp.create_ideal_y(u, dd_system.multi_mag_const, dd_system.multi_phase_const,
-                                 h0_tx=dd_system.tx_filt[0,0,N_taps//2], h0_rx=torch.max(dd_system.rx_filt)).detach().cpu()[:,:,1:]
-    alphabets, SERs = hlp.calc_progress(y, cnn_out.detach().cpu(), dd_system.multi_mag_const, dd_system.multi_phase_const)
-    
-    u_hat = hlp.y_hat_2_u_hat(cnn_out, dd_system.multi_mag_const, dd_system.multi_phase_const, h0_tx=dd_system.tx_filt[0,0,N_taps//2], h0_rx=torch.max(dd_system.rx_filt))
-    u = u[:,:,1:].detach().cpu()
-    MI = hlp.get_MI(u, u_hat.detach().cpu(), dd_system.constellation.detach().cpu(), SNR_dB)
+    u_hat = cnn_out_2_u_hat(cnn_out, dd_system)
+    SERs = perf_met.get_all_SERs(u, u_hat, dd_system)
+    MI = perf_met.get_MI(u, u_hat.detach().cpu(), dd_system.constellation.detach().cpu(), SNR_dB)
 
     io_tool.print_save_summary(f"{folder_path}/results.txt", dd_system.multi_mag_const, dd_system.multi_phase_const,
                                lr, L_link, alpha, SNR_dB, SERs, MI)
 
     if SNR_dB in SNR_save_fig and lr in lr_save_fig and L_link in L_link_save_fig and alpha in alpha_save_fig:
+        alphabets = perf_met.get_alphabets(dd_system)
         io_tool.save_fig_summary(y.detach().cpu(), cnn_out.detach().cpu(), dd_system.multi_mag_const, dd_system.multi_phase_const, alphabets,
                              folder_path, lr, L_link, alpha, SNR_dB)
 
@@ -119,13 +116,13 @@ activ_func = torch.nn.ELU()
 loss_func = loss_funcs[train_type]
 cnn_out_2_u_hat = CNN_equalizer.cnn_out_2_u_hat_funcs[train_type]
 ### Training hyperparameter
-batches_per_epoch = 300
-batch_size_per_epoch = [100, 300, 500]
+batches_per_epoch = 20
+batch_size_per_epoch = [100]
 N_sym = 1000
 lr_steps = np.array([0.004])       # for sweep over lr
 lr_save_fig = lr_steps
 
-checkpoint_per_epoch = 100
+checkpoint_per_epoch = 3
 save_progress = True
 
 folder_path = io_tool.create_folder(f"results/{mod_format}{M:}",0)

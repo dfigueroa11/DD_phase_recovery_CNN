@@ -25,15 +25,19 @@ def decode_and_SER(Tx, Rx, alphabet):
     Rx_idx, _ = min_distance_dec(Rx, alphabet)
     return torch.sum(Tx_idx != Rx_idx)/torch.numel(Tx_idx)
 
+def get_alphabets(dd_system: DD_system):
+    const = dd_system.constellation.detach().cpu()
+    mag_alphabet = torch.unique(torch.round(torch.abs(const), decimals=4))
+    phase_alphabet = torch.unique(torch.round(torch.angle(const/torch.abs(const)), decimals=4))
+    return mag_alphabet, phase_alphabet, const
+
 def get_all_SERs(u, u_hat, dd_system: DD_system):
     SERs = -torch.ones(3)
-    const = dd_system.constellation.detach().cpu()
+    mag_alphabet, phase_alphabet, const = get_alphabets(dd_system)
     if dd_system.multi_mag_const:
-        alphabet = torch.unique(torch.round(torch.abs(const), decimals=4))
-        SERs[0] = decode_and_SER(torch.abs(u), torch.abs(u_hat), alphabet)
+        SERs[0] = decode_and_SER(torch.abs(u), torch.abs(u_hat), mag_alphabet)
     if dd_system.multi_phase_const:
-        alphabet = torch.unique(torch.round(torch.angle(const/torch.abs(const)), decimals=4))
-        SERs[1] = decode_and_SER(u/torch.abs(u), u_hat/torch.abs(u_hat), alphabet)
+        SERs[1] = decode_and_SER(u/torch.abs(u), u_hat/torch.abs(u_hat), phase_alphabet)
     SERs[2] = decode_and_SER(u, u_hat, const)
     return SERs
 
