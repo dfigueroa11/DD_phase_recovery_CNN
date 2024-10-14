@@ -46,7 +46,7 @@ class CNN_equalizer(nn.Module):
         out = self.conv_layers[-1](out)
         return out
     
-cnn_out_2_u_hat_funcs = {TRAIN_CE_U_SYMBOLS: dconv_tools.mag_phase_2_complex,
+cnn_out_2_u_hat_funcs = {TRAIN_MSE_U_SYMBOLS: dconv_tools.mag_phase_2_complex,
                          TRAIN_MSE_U_MAG_PHASE: dconv_tools.mag_phase_2_complex,
                          TRAIN_MSE_U_SLDMAG_PHASE: dconv_tools.SLDmag_phase_2_complex,
                          TRAIN_CE_U_SYMBOLS: dconv_tools.APPs_2_u}

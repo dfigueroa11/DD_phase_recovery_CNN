@@ -51,17 +51,16 @@ def train_CNN(loss_function):
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
-            print("works :)")
             if (i+1)%(batches_per_epoch//checkpoint_per_epoch) == 0:
                 checkpoint_tasks(y, u, cnn_out, batch_size, (i+1)/batches_per_epoch, loss.detach().cpu().numpy())
         print()
 
 def checkpoint_tasks(y, u, cnn_out, batch_size, progress, loss):
-    u_hat = cnn_out_2_u_hat(cnn_out)
+    u_hat = cnn_out_2_u_hat(cnn_out, dd_system)
     SERs = perf_met.get_all_SERs(u, u_hat, dd_system)
     scheduler.step(sum(SERs))
     curr_lr = scheduler.get_last_lr()
-    MI = hlp.get_MI(u, u_hat.detach().cpu(), dd_system.constellation.detach().cpu(), SNR_dB)
+    MI = perf_met.get_MI(u, u_hat.detach().cpu(), dd_system.constellation.detach().cpu(), SNR_dB)
     io_tool.print_progress(dd_system.multi_mag_const, dd_system.multi_phase_const, batch_size,
                             progress, curr_lr, loss, SERs, MI)
     if save_progress:
