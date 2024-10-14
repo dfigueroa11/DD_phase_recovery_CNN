@@ -61,11 +61,9 @@ def checkpoint_tasks(y, u, cnn_out, batch_size, progress, loss):
     scheduler.step(sum(SERs))
     curr_lr = scheduler.get_last_lr()
     MI = perf_met.get_MI(u, u_hat.detach().cpu(), dd_system.constellation.detach().cpu(), SNR_dB)
-    io_tool.print_progress(dd_system.multi_mag_const, dd_system.multi_phase_const, batch_size,
-                            progress, curr_lr, loss, SERs, MI)
+    io_tool.print_progress(batch_size, progress, curr_lr, loss, SERs, MI)
     if save_progress:
-        io_tool.save_progress(progress_file_path, dd_system.multi_mag_const, dd_system.multi_phase_const,
-                                batch_size, progress, curr_lr, loss, SERs, MI)
+        io_tool.save_progress(progress_file_path, batch_size, progress, curr_lr, loss, SERs, MI)
 
 def eval_n_save_CNN():
     _, u, _, y = dd_system.simulate_transmission(100, N_sym, SNR_dB)
@@ -76,8 +74,7 @@ def eval_n_save_CNN():
     SERs = perf_met.get_all_SERs(u, u_hat, dd_system)
     MI = perf_met.get_MI(u, u_hat.detach().cpu(), dd_system.constellation.detach().cpu(), SNR_dB)
 
-    io_tool.print_save_summary(f"{folder_path}/results.txt", dd_system.multi_mag_const, dd_system.multi_phase_const,
-                               lr, L_link, alpha, SNR_dB, SERs, MI)
+    io_tool.print_save_summary(f"{folder_path}/results.txt", lr, L_link, alpha, SNR_dB, SERs, MI)
 
     if SNR_dB in SNR_save_fig and lr in lr_save_fig and L_link in L_link_save_fig and alpha in alpha_save_fig:
         alphabets = perf_met.get_alphabets(dd_system)
@@ -137,6 +134,6 @@ for lr in lr_steps:
                 cnn_equalizer, optimizer, scheduler = initialize_CNN_optimizer(lr)
                 if save_progress:
                     progress_file_path = f"{folder_path}/progress_{io_tool.make_file_name(lr, L_link, alpha, SNR_dB)}.txt"
-                    io_tool.init_progress_file(progress_file_path, dd_system.multi_mag_const, dd_system.multi_phase_const)
+                    io_tool.init_progress_file(progress_file_path)
                 train_CNN(loss_func)
                 eval_n_save_CNN()

@@ -34,9 +34,8 @@ def get_alphabets(dd_system: DD_system):
 def get_all_SERs(u, u_hat, dd_system: DD_system):
     SERs = -torch.ones(3)
     mag_alphabet, phase_alphabet, const = get_alphabets(dd_system)
-    if dd_system.multi_mag_const:
+    if dd_system.multi_mag_const and dd_system.multi_phase_const:
         SERs[0] = decode_and_SER(torch.abs(u), torch.abs(u_hat), mag_alphabet)
-    if dd_system.multi_phase_const:
         SERs[1] = decode_and_SER(u/torch.abs(u), u_hat/torch.abs(u_hat), phase_alphabet)
     SERs[2] = decode_and_SER(u, u_hat, const)
     return SERs

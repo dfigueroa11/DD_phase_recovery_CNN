@@ -19,7 +19,7 @@ def create_folder(path,n_copy):
         print(f"directory '{path}' already exist, try to create '{path}_{n_copy}'")
         return create_folder(path,n_copy)
 
-def init_progress_file(path, multi_mag, multi_phase):
+def init_progress_file(path):
     ''' creates the file to save the progress, and writes the first row with the variable names
 
     Arguments:
@@ -28,12 +28,9 @@ def init_progress_file(path, multi_mag, multi_phase):
     multi_phase:    whether the constellation have multiple phases or not
     '''
     with open(path, 'a') as file:
-        if multi_mag and multi_phase:
-            file.write(f"Batch_size,progress,lr,loss,mag_ER,phase_ER,SER,MI\n")
-        else:
-            file.write(f"Batch_size,progress,lr,loss,SER,MI\n")
-    
-def save_progress(path, multi_mag, multi_phase, batch_size, progress, lr, loss, SERs, MI):
+        file.write(f"Batch_size,progress,lr,loss,mag_ER,phase_ER,SER,MI\n")
+
+def save_progress(path, batch_size, progress, lr, loss, SERs, MI):
     ''' save the progress
 
     Arguments:
@@ -48,13 +45,9 @@ def save_progress(path, multi_mag, multi_phase, batch_size, progress, lr, loss, 
     MI:             Mutual information float
     '''
     with open(path, 'a') as file:
-        if multi_mag and multi_phase:
-            file.write(f"{batch_size},{progress:.5},{lr[0]:.5e},{loss:.5e},{SERs[0]:.5e},{SERs[1]:.5e},{SERs[2]:.5e},{MI:.5e}\n")
-        else:
-            file.write(f"{batch_size},{progress:.5},{lr[0]:.5e},{loss:.5e},{SERs[0]:.5e},{MI:.5e}\n")
-    return 
+        file.write(f"{batch_size},{progress:.5},{lr[0]:.5e},{loss:.5e},{SERs[0]:.5e},{SERs[1]:.5e},{SERs[2]:.5e},{MI:.5e}\n")
 
-def print_progress(multi_mag, multi_phase, batch_size, progress, lr, loss, SERs, MI):
+def print_progress(batch_size, progress, lr, loss, SERs, MI):
     '''Print the training progress
 
     Arguments:
@@ -67,11 +60,8 @@ def print_progress(multi_mag, multi_phase, batch_size, progress, lr, loss, SERs,
     SERs:           [mag ER, phase, ER, SER] or [SER] depending on multi_mag, multi_phase
     MI:             Mutual information float
     '''
-    if multi_mag and multi_phase:
-        print(f"   Batch size:{batch_size:>4}  prog:{progress:>6.1%}  lr:{lr[0]:>8.2e}  loss:{loss:>9.3e}  "+
-              f"mag ER:{SERs[0]:>8.2e}  ph ER:{SERs[1]:>8.2e}  SER:{SERs[2]:>8.2e}  MI:{MI:>4.2f}", end='\r')
-    else:
-        print(f"\tBatch size: {batch_size:>4}  progress: {progress:>6.1%}   lr: {lr[0]:>8.2e}   loss: {loss:>9.3e}   SER: {SERs[0]:>9.3e}   MI: {MI:>6.3f}", end='\r')
+    print(f"   Batch size:{batch_size:>4}  prog:{progress:>6.1%}  lr:{lr[0]:>8.2e}  loss:{loss:>9.3e}  "+
+          f"mag ER:{SERs[0]:>8.2e}  ph ER:{SERs[1]:>8.2e}  SER:{SERs[2]:>8.2e}  MI:{MI:>4.2f}", end='\r')
 
 def init_summary_file(path):
     ''' creates the file to save the results, and writes the first row with the variable names
@@ -80,9 +70,9 @@ def init_summary_file(path):
     path:           path of the file to save the results
     '''
     with open(path, 'a') as file:
-        file.write("lr,L_link_km,alpha,SNR_dB,(mag_ER,phase_ER),SER,MI\n")
+        file.write("lr,L_link_km,alpha,SNR_dB,mag_ER,phase_ER,SER,MI\n")
         
-def print_save_summary(path, multi_mag, multi_phase, lr, L_link, alpha, SNR_dB, SERs, MI):
+def print_save_summary(path, lr, L_link, alpha, SNR_dB, SERs, MI):
     ''' Print and saves the summary of the training process
 
     Arguments:
@@ -97,13 +87,9 @@ def print_save_summary(path, multi_mag, multi_phase, lr, L_link, alpha, SNR_dB, 
     MI:             Mutual information float
     '''
     with open(path, 'a') as file:
-        if multi_mag and multi_phase:
-            file.write(f"{lr},{L_link*1e-3:.0f},{alpha},{SNR_dB},{SERs[0]:.10e},{SERs[1]:.10e},{SERs[2]:.10e},{MI:.10e}\n")
-            print(f"\tmag ER: {SERs[0]:>9.3e}   phase ER: {SERs[1]:>9.3e}   SER: {SERs[2]:>9.3e}   MI: {MI:>6.3f}")
-        else:
-            file.write(f"{lr},{L_link*1e-3:.0f},{alpha},{SNR_dB},{SERs[0]:.10e},{MI:.10e}\n")
-            print(f"\tSER: {SERs[0]:>9.3e}   MI: {MI:>6.3f}")
-    
+        file.write(f"{lr},{L_link*1e-3:.0f},{alpha},{SNR_dB},{SERs[0]:.10e},{SERs[1]:.10e},{SERs[2]:.10e},{MI:.10e}\n")
+        print(f"\tmag ER: {SERs[0]:>9.3e}   phase ER: {SERs[1]:>9.3e}   SER: {SERs[2]:>9.3e}   MI: {MI:>6.3f}")
+
 def save_fig_summary(y, y_hat, multi_mag, multi_phase, alphabets, folder_path, lr, L_link, alpha, SNR_dB):
     '''Save the figure with the resume
     
