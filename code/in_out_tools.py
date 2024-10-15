@@ -4,6 +4,7 @@ import os
 import matplotlib.pyplot as plt
 from matplotlib import axes 
 from matplotlib import gridspec
+from matplotlib.lines import Line2D
 import argparse
 
 
@@ -104,18 +105,14 @@ def save_fig_summary(u, y, u_hat, cnn_out, dd_system: DD_system, train_type, fol
     ax3 = fig.add_subplot(gs[1,1])
     ax4 = fig.add_subplot(gs[0,2])
     ax5 = fig.add_subplot(gs[1,2])
-    plot_constellation(ax1, u_hat, alphabets[2])
+    plot_constellation(ax1, u, u_hat.flatten(), alphabets[2])
     plot_histogram(ax2, ax3, y[:,:,1::2].flatten(), torch.abs(u_hat).flatten(), torch.abs(u), alphabets[0], ["odd sample","Magnitude"])
     plot_histogram(ax4, ax5, y[:,:,0::2].flatten(), torch.angle(u_hat).flatten(), torch.angle(u), alphabets[1], ["even sample","Phase"])
-    # else :
-    #     fig, ax1 = plt.subplots(figsize=(5,9))
-    #     name = "Magnitude" if dd_system.multi_mag_const else "phase"
-    #     plot_histogram(ax1, y[:,:,1::2].flatten(), u_hat[:,0,:].flatten(), alphabets[0], name)
-
+    
     fig.savefig(f"{folder_path}/{make_file_name(lr, L_link, alpha, SNR_dB)}.png")
     plt.close()
 
-def plot_constellation(ax, y_hat, alphabet):
+def plot_constellation(ax, u, u_hat, alphabet):
     '''Plot the constellation diagram
     
     Arguments:
@@ -124,10 +121,15 @@ def plot_constellation(ax, y_hat, alphabet):
     alphabet:   contains the ideal output for reference
     '''
     ax.set_title("Constellation diagram")
-    # y_hat_comp = data_conversion_tools.mag_phase_2_complex(y_hat, )
-    # ax.scatter(np.real(y_hat_comp), np.imag(y_hat_comp), c='b', alpha=0.1, label='CNN out')
-    # ax.scatter(np.real(alphabet), np.imag(alphabet), c='r', label='ideal')
-    # ax.legend(loc='upper right')
+    legend_elements = []
+    for i, sym in enumerate(alphabet):
+        idx = np.flatnonzero(np.isclose(u,sym))
+        ax.scatter(np.real(u_hat[idx]), np.imag(u_hat[idx]), alpha=0.01)
+        legend_elements.append(Line2D([0], [0], marker='o', color='w', label=f'CNN out given u={np.real(sym):.1f}+{np.imag(sym):.1f}j',
+                                      markerfacecolor=f'C{i}', markersize=10))
+    ax.scatter(np.real(alphabet), np.imag(alphabet), c='k')
+    legend_elements.append(Line2D([0], [0], marker='o', color='w', label='ideal', markerfacecolor='k', markersize=10))
+    ax.legend(handles=legend_elements, loc='upper right')
     ax.grid()
 
 def plot_histogram(ax1, ax2, y, u_hat, u, alphabet, names):
@@ -148,7 +150,7 @@ def plot_histogram(ax1, ax2, y, u_hat, u, alphabet, names):
     legends = []
     for val in alphabet:
         line = ax2.axvline(x=val, color='red', linestyle='--')
-        idx = np.flatnonzero(np.abs(u-val)<1e-3)
+        idx = np.flatnonzero(np.isclose(u, val, rtol=1e-3))
         _, _, hist = ax2.hist(u_hat[idx], 200, alpha=0.5, density=True)
         elements.append(hist[0])
         legends.append(f"CNN_out given u={val:.2f}")
