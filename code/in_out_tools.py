@@ -98,19 +98,32 @@ def print_save_summary(path, lr, L_link, alpha, SNR_dB, SERs, MI):
 
 def save_fig_summary(u, y, u_hat, cnn_out, dd_system: DD_system, train_type, folder_path, lr, L_link, alpha, SNR_dB):
     alphabets = get_alphabets(dd_system, SNR_dB)
-    fig = plt.figure(figsize=(15,9))
-    gs = gridspec.GridSpec(2,3)
-    ax1 = fig.add_subplot(gs[:,0])
-    ax2 = fig.add_subplot(gs[0,1])
-    ax3 = fig.add_subplot(gs[1,1])
-    ax4 = fig.add_subplot(gs[0,2])
-    ax5 = fig.add_subplot(gs[1,2])
-    plot_constellation(ax1, u, u_hat.flatten(), alphabets[2])
-    plot_histogram(ax2, ax3, y[:,:,1::2].flatten(), torch.abs(u_hat).flatten(), torch.abs(u), alphabets[0], ["odd sample","Magnitude"])
-    plot_histogram(ax4, ax5, y[:,:,0::2].flatten(), torch.angle(u_hat).flatten(), torch.angle(u), alphabets[1], ["even sample","Phase"])
-    
-    fig.savefig(f"{folder_path}/{make_file_name(lr, L_link, alpha, SNR_dB)}.png")
-    plt.close()
+    if dd_system.multi_mag_const and dd_system.multi_phase_const:
+        fig = plt.figure(figsize=(15,9))
+        gs = gridspec.GridSpec(2,3)
+        ax1 = fig.add_subplot(gs[:,0])
+        ax2 = fig.add_subplot(gs[0,1])
+        ax3 = fig.add_subplot(gs[1,1])
+        ax4 = fig.add_subplot(gs[0,2])
+        ax5 = fig.add_subplot(gs[1,2])
+        plot_constellation(ax1, u, u_hat.flatten(), alphabets[2])
+        plot_histogram(ax2, ax3, y[:,:,1::2].flatten(), torch.abs(u_hat).flatten(), torch.abs(u), alphabets[0], ["odd sample","Magnitude"])
+        plot_histogram(ax4, ax5, y[:,:,0::2].flatten(), torch.angle(u_hat).flatten(), torch.angle(u), alphabets[1], ["even sample","Phase"])
+        fig.savefig(f"{folder_path}/{make_file_name(lr, L_link, alpha, SNR_dB)}.png")
+        plt.close()
+        return
+    if dd_system.multi_mag_const:
+        fig, (ax1,ax2) = plt.subplots(2, 1, figsize=(5,9))
+        plot_histogram(ax1, ax2, y[:,:,1::2].flatten(), u_hat.flatten(), u, alphabets[0], ["odd sample","Magnitude"])
+        fig.savefig(f"{folder_path}/{make_file_name(lr, L_link, alpha, SNR_dB)}.png")
+        plt.close()
+        return
+    if dd_system.multi_phase_const:
+        fig, (ax1,ax2) = plt.subplots(2, 1, figsize=(5,9))
+        plot_histogram(ax1, ax2, y[:,:,0::2].flatten(), torch.angle(u_hat).flatten(), torch.angle(u), alphabets[1], ["even sample","Phase"])
+        fig.savefig(f"{folder_path}/{make_file_name(lr, L_link, alpha, SNR_dB)}.png")
+        plt.close()
+        return
 
 def plot_constellation(ax, u, u_hat, alphabet):
     '''Plot the constellation diagram
@@ -170,13 +183,13 @@ def process_args():
         type=str,
         help="modulation format",
         choices=["ASK", "PAM", "DDQAM", "QAM"],
-        default="ASK")
+        default="PAM")
     parser.add_argument(
         "--order",
         "-o",
         type=int,
         help="modulation format order",
-        default=4)
+        default=2)
     return parser.parse_args()
 
 def make_file_name(lr, L_link, alpha, SNR_dB):
