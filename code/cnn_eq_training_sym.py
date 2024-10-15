@@ -76,10 +76,9 @@ def eval_n_save_CNN():
 
     io_tool.print_save_summary(f"{folder_path}/results.txt", lr, L_link, alpha, SNR_dB, SERs, MI)
 
-    if SNR_dB in SNR_save_fig and lr in lr_save_fig and L_link in L_link_save_fig and alpha in alpha_save_fig:
-        alphabets = perf_met.get_alphabets(dd_system, SNR_dB)
-        io_tool.save_fig_summary(y.detach().cpu(), cnn_out.detach().cpu(), dd_system.multi_mag_const, dd_system.multi_phase_const, alphabets,
-                             folder_path, lr, L_link, alpha, SNR_dB)
+    if all([SNR_dB in SNR_save_fig, lr in lr_save_fig, L_link in L_link_save_fig, alpha in alpha_save_fig]):
+        io_tool.save_fig_summary(u, y.detach().cpu(), u_hat.detach().cpu(), cnn_out.detach().cpu(), dd_system, train_type,
+                                 folder_path, lr, L_link, alpha, SNR_dB)
 
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -100,10 +99,10 @@ alpha_steps = np.arange(0,1)               # for sweep over alpha
 alpha_save_fig = alpha_steps
 L_link_steps = np.arange(0,35,6)*1e3      # for sweep over L_link
 L_link_save_fig = L_link_steps[[0,2,-1]]
-SNR_dB_steps = np.arange(-5, 12, 2)                          # for sweep over SNR
+SNR_dB_steps = np.arange(5, 12, 2)                          # for sweep over SNR
 SNR_save_fig = SNR_dB_steps#[[0,5,-1]]
 
-train_type = CNN_equalizer.TRAIN_MSE_U_SYMBOLS
+train_type = CNN_equalizer.TRAIN_MSE_U_SLDMAG_PHASE
 
 ### CNN definition
 num_ch = np.array([1,15,7,1])

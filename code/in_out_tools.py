@@ -2,11 +2,16 @@ import numpy as np
 import torch
 import os
 import matplotlib.pyplot as plt
-import matplotlib.axes as axes
+from matplotlib import axes 
+from matplotlib import gridspec
 import argparse
 
 
 import help_functions as hlp
+from DD_system import DD_system
+import CNN_equalizer
+from performance_metrics import get_alphabets
+import data_conversion_tools
 
 def create_folder(path,n_copy):
     '''Creates the folder specified by path, if it already exists append a number to the path and creates the folder'''
@@ -90,30 +95,22 @@ def print_save_summary(path, lr, L_link, alpha, SNR_dB, SERs, MI):
         file.write(f"{lr},{L_link*1e-3:.0f},{alpha},{SNR_dB},{SERs[0]:.10e},{SERs[1]:.10e},{SERs[2]:.10e},{MI:.10e}\n")
         print(f"\tmag ER: {SERs[0]:>9.3e}   phase ER: {SERs[1]:>9.3e}   SER: {SERs[2]:>9.3e}   MI: {MI:>6.3f}")
 
-def save_fig_summary(y, y_hat, multi_mag, multi_phase, alphabets, folder_path, lr, L_link, alpha, SNR_dB):
-    '''Save the figure with the resume
-    
-    Arguments:
-    y_ideal:        Tensor containing the ideal magnitudes and phase differences (shape (batch_size, 2/1, N_sym) depending on multi_mag, multi_phase)
-    y_hat:          output of the CNN (same shape as y_ideal)
-    multi_mag:      whether the constellation have multiple magnitudes or not
-    multi_phase:    whether the constellation have multiple phases or not
-    alphabets:      [mag alphabet, phase alphabet, symbol alphabet] or [alphabet] depending on multi_mag, multi_phase
-    folder_path:    path of the folder to save the image
-    lr:             learning rate
-    L_link:         length of the SMF in meters (float) use if the channel presents CD
-    alpha:          roll off factor (float between 0 and 1)
-    SNR_dB:         SNR in dB used for the simulation (float)
-    '''
-    if multi_mag and multi_phase:
-        fig, (ax1,ax2,ax3) = plt.subplots(1, 3, figsize=(15,9))
-        plot_histogram(ax2, y[:,:,1::2].flatten(), y_hat[:,0,:].flatten(), alphabets[0], "Magnitude")
-        plot_histogram(ax3, y[:,:,0::2].flatten(), y_hat[:,1,:].flatten(), alphabets[1], "Phase")
-        plot_constellation(ax1, y_hat, alphabets[2])
-    else :
-        fig, ax1 = plt.subplots(figsize=(5,9))
-        name = "Magnitude" if multi_mag else "phase"
-        plot_histogram(ax1, y[:,:,1::2].flatten(), y_hat[:,0,:].flatten(), alphabets[0], name)
+def save_fig_summary(u, y, u_hat, cnn_out, dd_system: DD_system, train_type, folder_path, lr, L_link, alpha, SNR_dB):
+    alphabets = get_alphabets(dd_system, SNR_dB)
+    fig = plt.figure(figsize=(15,9))
+    gs = gridspec.GridSpec(2,3)
+    ax1 = fig.add_subplot(gs[:,0])
+    ax2 = fig.add_subplot(gs[0,1])
+    ax3 = fig.add_subplot(gs[1,1])
+    ax4 = fig.add_subplot(gs[0,2])
+    ax5 = fig.add_subplot(gs[1,2])
+    plot_constellation(ax1, u_hat, alphabets[2])
+    plot_histogram(ax2, ax3, y[:,:,1::2].flatten(), torch.abs(u_hat).flatten(), torch.abs(u), alphabets[0], ["odd sample","Magnitude"])
+    plot_histogram(ax4, ax5, y[:,:,0::2].flatten(), torch.angle(u_hat).flatten(), torch.angle(u), alphabets[1], ["even sample","Phase"])
+    # else :
+    #     fig, ax1 = plt.subplots(figsize=(5,9))
+    #     name = "Magnitude" if dd_system.multi_mag_const else "phase"
+    #     plot_histogram(ax1, y[:,:,1::2].flatten(), u_hat[:,0,:].flatten(), alphabets[0], name)
 
     fig.savefig(f"{folder_path}/{make_file_name(lr, L_link, alpha, SNR_dB)}.png")
     plt.close()
@@ -127,13 +124,13 @@ def plot_constellation(ax, y_hat, alphabet):
     alphabet:   contains the ideal output for reference
     '''
     ax.set_title("Constellation diagram")
-    y_hat_comp = hlp.mag_phase_2_complex(y_hat)
-    ax.scatter(np.real(y_hat_comp), np.imag(y_hat_comp), c='b', alpha=0.1, label='CNN out')
-    ax.scatter(np.real(alphabet), np.imag(alphabet), c='r', label='ideal')
-    ax.legend(loc='upper right')
+    # y_hat_comp = data_conversion_tools.mag_phase_2_complex(y_hat, )
+    # ax.scatter(np.real(y_hat_comp), np.imag(y_hat_comp), c='b', alpha=0.1, label='CNN out')
+    # ax.scatter(np.real(alphabet), np.imag(alphabet), c='r', label='ideal')
+    # ax.legend(loc='upper right')
     ax.grid()
 
-def plot_histogram(ax, y, y_hat, alphabet, name):
+def plot_histogram(ax1, ax2, y, u_hat, u, alphabet, names):
     '''Plot the constellation diagram
     
     Arguments:
@@ -143,13 +140,22 @@ def plot_histogram(ax, y, y_hat, alphabet, name):
     alphabet:   contains the ideal output for reference
     name:       name for the plot, (Magnitude or Phase)
     '''
-    ax.set_title(name)
+    ax1.set_title(names[0])
+    ax1.hist(y, 200, alpha=0.5, density=True)
+    ax1.grid()
+    ax2.set_title(names[1])
+    elements = []
+    legends = []
     for val in alphabet:
-        line = ax.axvline(x=val, color='red', linestyle='--')
-    _, _, hist1 = ax.hist(y, 200, alpha=0.5, density=True)
-    _, _, hist2 = ax.hist(y_hat, 200, alpha=0.5, density=True)
-    ax.legend([line, hist1[0], hist2[0]],['ideal', 'DD out', 'CNN out'], loc='upper right')
-    ax.grid()
+        line = ax2.axvline(x=val, color='red', linestyle='--')
+        idx = np.flatnonzero(np.abs(u-val)<1e-3)
+        _, _, hist = ax2.hist(u_hat[idx], 200, alpha=0.5, density=True)
+        elements.append(hist[0])
+        legends.append(f"CNN_out given u={val:.2f}")
+    elements.append(line)
+    legends.append("ideal")
+    ax2.legend(elements,legends, loc='upper right')
+    ax2.grid()
 
 def process_args():
     formatter = lambda prog: argparse.RawTextHelpFormatter(prog, max_help_position=60)
@@ -162,7 +168,7 @@ def process_args():
         type=str,
         help="modulation format",
         choices=["ASK", "PAM", "DDQAM", "QAM"],
-        default="PAM")
+        default="ASK")
     parser.add_argument(
         "--order",
         "-o",
