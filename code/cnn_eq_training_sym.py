@@ -118,7 +118,7 @@ N_sym = 1000
 lr_steps = np.array([0.004])       # for sweep over lr
 lr_save_fig = lr_steps
 
-checkpoint_per_epoch = 20
+checkpoint_per_epoch = 100
 save_progress = True
 
 folder_path = io_tool.create_folder(f"results/{mod_format}{M:}",0)
@@ -128,7 +128,7 @@ for lr in lr_steps:
     for L_link in L_link_steps:
         for alpha in alpha_steps:
             for SNR_dB in SNR_dB_steps:
-                print(f'training model with lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB} dB, for {mod_format}-{M}')
+                print(f'training model with lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB} dB, for {mod_format}-{M}, loss function: {train_type:.0f}')
                 dd_system = initialize_dd_system()
                 cnn_eq, optimizer, scheduler = initialize_CNN_optimizer(lr)
                 if save_progress:
