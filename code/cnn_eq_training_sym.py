@@ -98,11 +98,10 @@ R_sym = 35e9
 beta2 = -2.168e-26
 alpha_steps = np.arange(0,1)               # for sweep over alpha
 alpha_save_fig = alpha_steps
-L_link_steps = np.arange(0,35,20)*1e3      # for sweep over L_link
+L_link_steps = np.arange(0,35,6)*1e3      # for sweep over L_link
 L_link_save_fig = L_link_steps[[0,2,-1]]
-SNR_dB_steps = np.arange(5, 12, 5)                          # for sweep over SNR
-SNR_save_fig = SNR_dB_steps#[[0,5,-1]]
-
+SNR_dB_steps = np.arange(-5, 12, 2)                          # for sweep over SNR
+SNR_save_fig = SNR_dB_steps[[0,5,-1]]
 train_type = CNN_equalizer.TRAIN_TYPES[args.loss_func]
 
 ### CNN definition
@@ -113,8 +112,8 @@ activ_func = torch.nn.ELU()
 loss_func = loss_funcs[train_type]
 cnn_out_2_u_hat = CNN_equalizer.cnn_out_2_u_hat_funcs[train_type]
 ### Training hyperparameter
-batches_per_epoch = 50
-batch_size_per_epoch = [100]
+batches_per_epoch = 300
+batch_size_per_epoch = [100, 300, 500]
 N_sym = 1000
 lr_steps = np.array([0.004])       # for sweep over lr
 lr_save_fig = lr_steps
