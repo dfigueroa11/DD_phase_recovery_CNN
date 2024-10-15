@@ -34,8 +34,8 @@ def SLDmag_phase_2_complex(x, dd_system: DD_system):
     h0_tx=dd_system.tx_filt[0,0,dd_system.N_taps//2]
     h0_rx=torch.max(dd_system.rx_filt)
     if not dd_system.multi_phase_const:
-        return torch.sqrt(torch.abs(x)/h0_rx)/torch.abs(h0_tx)
-    return torch.sqrt(torch.abs(x[:,0,:])/h0_rx)/torch.abs(h0_tx)*torch.exp(1j*x[:,1,:])
+        return torch.sign(x)*torch.sqrt(torch.abs(x)/h0_rx)/torch.abs(h0_tx)
+    return torch.sign(x[:,0,:])*torch.sqrt(torch.abs(x[:,0,:])/h0_rx)/torch.abs(h0_tx)*torch.exp(1j*x[:,1,:])
 
 def complex_2_mag_phase(x, dd_system: DD_system):
     ''' Converts from mag phase representation to complex number
