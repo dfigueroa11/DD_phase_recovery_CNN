@@ -37,7 +37,7 @@ def get_all_SERs(u, u_hat, dd_system: DD_system, Ptx_dB):
     mag_alphabet, phase_alphabet, const = get_alphabets(dd_system, Ptx_dB)
     if dd_system.multi_mag_const and dd_system.multi_phase_const:
         SERs[0] = decode_and_SER(torch.abs(u), torch.abs(u_hat), mag_alphabet)
-        SERs[1] = decode_and_SER(u/torch.abs(u), u_hat/torch.abs(u_hat), phase_alphabet)
+        SERs[1] = decode_and_SER(u/torch.abs(u), u_hat/torch.abs(u_hat), torch.exp(1j*phase_alphabet))
     SERs[2] = decode_and_SER(u, u_hat, const)
     return SERs
 
