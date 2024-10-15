@@ -52,7 +52,7 @@ def train_CNN(loss_function):
             optimizer.step()
             optimizer.zero_grad()
             if (i+1)%(batches_per_epoch//checkpoint_per_epoch) == 0:
-                checkpoint_tasks(y, u, cnn_out, batch_size, (i+1)/batches_per_epoch, loss.detach().cpu().numpy())
+                checkpoint_tasks(y, u.detach().cpu(), cnn_out.detach().cpu(), batch_size, (i+1)/batches_per_epoch, loss.detach().cpu().numpy())
         print()
 
 def checkpoint_tasks(y, u, cnn_out, batch_size, progress, loss):
@@ -60,7 +60,7 @@ def checkpoint_tasks(y, u, cnn_out, batch_size, progress, loss):
     SERs = perf_met.get_all_SERs(u, u_hat, dd_system, SNR_dB)
     scheduler.step(sum(SERs))
     curr_lr = scheduler.get_last_lr()
-    MI = perf_met.get_MI(u, u_hat.detach().cpu(), dd_system, SNR_dB)
+    MI = perf_met.get_MI(u, u_hat, dd_system, SNR_dB)
     io_tool.print_progress(batch_size, progress, curr_lr, loss, SERs, MI)
     if save_progress:
         io_tool.save_progress(progress_file_path, batch_size, progress, curr_lr, loss, SERs, MI)
@@ -68,16 +68,17 @@ def checkpoint_tasks(y, u, cnn_out, batch_size, progress, loss):
 def eval_n_save_CNN():
     _, u, _, y = dd_system.simulate_transmission(100, N_sym, SNR_dB)
     cnn_equalizer.eval()
-    cnn_out = cnn_equalizer(y)
+    cnn_out = cnn_equalizer(y).detach().cpu()
 
     u_hat = cnn_out_2_u_hat(cnn_out, dd_system)
+    u = u.detach().cpu()
     SERs = perf_met.get_all_SERs(u, u_hat, dd_system, SNR_dB)
-    MI = perf_met.get_MI(u, u_hat.detach().cpu(), dd_system, SNR_dB)
+    MI = perf_met.get_MI(u, u_hat, dd_system, SNR_dB)
 
     io_tool.print_save_summary(f"{folder_path}/results.txt", lr, L_link, alpha, SNR_dB, SERs, MI)
 
     if all([SNR_dB in SNR_save_fig, lr in lr_save_fig, L_link in L_link_save_fig, alpha in alpha_save_fig]):
-        io_tool.save_fig_summary(u, y.detach().cpu(), u_hat.detach().cpu(), cnn_out.detach().cpu(), dd_system, train_type,
+        io_tool.save_fig_summary(u, y.detach().cpu(), u_hat, cnn_out, dd_system, train_type,
                                  folder_path, lr, L_link, alpha, SNR_dB)
 
 
@@ -97,9 +98,9 @@ R_sym = 35e9
 beta2 = -2.168e-26
 alpha_steps = np.arange(0,1)               # for sweep over alpha
 alpha_save_fig = alpha_steps
-L_link_steps = np.arange(0,35,6)*1e3      # for sweep over L_link
+L_link_steps = np.arange(0,35,20)*1e3      # for sweep over L_link
 L_link_save_fig = L_link_steps[[0,2,-1]]
-SNR_dB_steps = np.arange(5, 12, 2)                          # for sweep over SNR
+SNR_dB_steps = np.arange(5, 12, 5)                          # for sweep over SNR
 SNR_save_fig = SNR_dB_steps#[[0,5,-1]]
 
 train_type = CNN_equalizer.TRAIN_TYPES[args.loss_func]
