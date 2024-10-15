@@ -8,7 +8,7 @@ import sys
 
 import help_functions as hlp
 import DD_system
-import CNN_equalizer
+import cnn_equalizer
 
 def create_results_folder(path,n_copy):
     try:
@@ -29,20 +29,20 @@ def initialize_dd_system():
                                 L_link=L_link, R_sym=R_sym, beta2=beta2)
 
 def initialize_CNN_optimizer(lr):
-    cnn_equalizer = CNN_equalizer.CNN_equalizer(num_ch, ker_lens, strides, activ_func)
-    cnn_equalizer.to(device)
-    optimizer = optim.Adam(cnn_equalizer.parameters(), eps=1e-07, lr=lr)
-    return cnn_equalizer, optimizer
+    cnn_eq = cnn_equalizer.CNN_equalizer(num_ch, ker_lens, strides, activ_func)
+    cnn_eq.to(device)
+    optimizer = optim.Adam(cnn_eq.parameters(), eps=1e-07, lr=lr)
+    return cnn_eq, optimizer
 
 def train_CNN():
     loss_evolution = [-1]
     loss_func = MSELoss(reduction='mean')
-    cnn_equalizer.train()
+    cnn_eq.train()
     for batch_size in batch_size_per_epoch:
         for i in range(batches_per_epoch):
             _, x, y = dd_system.simulate_transmission(batch_size, N_sym, SNR_dB)
             phase_diff = torch.cat((torch.zeros((x.size(0),x.size(1),1), device=device),hlp.abs_phase_diff(x)),-1)
-            y_hat = cnn_equalizer(torch.cat((y,torch.kron(phase_diff,torch.eye(N_sim, device=device)[-1])), dim=1))
+            y_hat = cnn_eq(torch.cat((y,torch.kron(phase_diff,torch.eye(N_sim, device=device)[-1])), dim=1))
             y_1_ISI = hlp.DD_1sym_ISI(x,dd_system.tx_filt[0,0,N_taps//2],dd_system.tx_filt[0,0,N_taps//2+1], device=device)*torch.max(dd_system.rx_filt)
             loss = loss_func(y_1_ISI[:,:,1::2], y_hat)
             
@@ -57,9 +57,9 @@ def train_CNN():
 
 def eval_n_save_CNN():
     _, x, y = dd_system.simulate_transmission(100, N_sym, SNR_dB)
-    cnn_equalizer.eval()
+    cnn_eq.eval()
     phase_diff = torch.cat((torch.zeros((x.size(0),x.size(1),1), device=device),hlp.abs_phase_diff(x)),-1)
-    y_hat = cnn_equalizer(torch.cat((y,torch.kron(phase_diff,torch.eye(N_sim, device=device)[-1])), dim=1))
+    y_hat = cnn_eq(torch.cat((y,torch.kron(phase_diff,torch.eye(N_sim, device=device)[-1])), dim=1))
             
     y_1_ISI = hlp.DD_1sym_ISI(x,dd_system.tx_filt[0,0,N_taps//2],dd_system.tx_filt[0,0,N_taps//2+1], device=device)*torch.max(dd_system.rx_filt)
     alphabet, SER = hlp.decode_and_ER(y_1_ISI[:,:,1::2],y_hat)
@@ -126,6 +126,6 @@ for lr in lr_steps:
             for SNR_dB in SNR_dB_steps:
                 print(f'training model with lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB} dB')
                 dd_system = initialize_dd_system()
-                cnn_equalizer, optimizer = initialize_CNN_optimizer(lr)
+                cnn_eq, optimizer = initialize_CNN_optimizer(lr)
                 train_CNN()
                 eval_n_save_CNN()

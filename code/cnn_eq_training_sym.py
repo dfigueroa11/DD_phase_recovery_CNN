@@ -8,7 +8,7 @@ import help_functions as hlp
 import performance_metrics as perf_met
 import in_out_tools as io_tool
 from DD_system import DD_system
-import CNN_equalizer
+import cnn_equalizer
 from loss_functions import loss_funcs
 
 def initialize_dd_system():
@@ -28,23 +28,23 @@ def initialize_CNN_optimizer(lr):
     if dd_system.multi_mag_const and dd_system.multi_phase_const:
         groups_list = [1]+[2]*(len(ker_lens)-1)
         num_ch_aux[1:] = num_ch_aux[1:]*2
-    if train_type == CNN_equalizer.TRAIN_CE_U_SYMBOLS:
+    if train_type == cnn_equalizer.TRAIN_CE_U_SYMBOLS:
         groups_list.append(1)
         num_ch_aux = np.append(num_ch_aux,M)
         strides_aux = np.append(strides_aux,1)
         ker_lens_aux = np.append(ker_lens_aux, 7)
-    cnn_equalizer = CNN_equalizer.CNN_equalizer(num_ch_aux, ker_lens_aux, strides_aux, activ_func, groups_list)
-    cnn_equalizer.to(device)
-    optimizer = optim.Adam(cnn_equalizer.parameters(), eps=1e-07, lr=lr)
+    cnn_eq = cnn_equalizer.CNN_equalizer(num_ch_aux, ker_lens_aux, strides_aux, activ_func, groups_list)
+    cnn_eq.to(device)
+    optimizer = optim.Adam(cnn_eq.parameters(), eps=1e-07, lr=lr)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5)
-    return cnn_equalizer, optimizer, scheduler
+    return cnn_eq, optimizer, scheduler
 
 def train_CNN(loss_function):
-    cnn_equalizer.train()
+    cnn_eq.train()
     for batch_size in batch_size_per_epoch:
         for i in range(batches_per_epoch):
             u_idx, u, _, y = dd_system.simulate_transmission(batch_size, N_sym, SNR_dB)
-            cnn_out = cnn_equalizer(y)
+            cnn_out = cnn_eq(y)
             
             loss = loss_function(u_idx, u, cnn_out, dd_system)
             
@@ -67,8 +67,8 @@ def checkpoint_tasks(y, u, cnn_out, batch_size, progress, loss):
 
 def eval_n_save_CNN():
     _, u, _, y = dd_system.simulate_transmission(100, N_sym, SNR_dB)
-    cnn_equalizer.eval()
-    cnn_out = cnn_equalizer(y).detach().cpu()
+    cnn_eq.eval()
+    cnn_out = cnn_eq(y).detach().cpu()
 
     u_hat = cnn_out_2_u_hat(cnn_out, dd_system)
     u = u.detach().cpu()
@@ -102,7 +102,7 @@ L_link_steps = np.arange(0,35,6)*1e3      # for sweep over L_link
 L_link_save_fig = L_link_steps[[0,2,-1]]
 SNR_dB_steps = np.arange(-5, 12, 2)                          # for sweep over SNR
 SNR_save_fig = SNR_dB_steps[[0,5,-1]]
-train_type = CNN_equalizer.TRAIN_TYPES[args.loss_func]
+train_type = cnn_equalizer.TRAIN_TYPES[args.loss_func]
 
 ### CNN definition
 num_ch = np.array([1,15,7,1])
@@ -110,7 +110,7 @@ ker_lens = np.array([11,11,7])
 strides = np.array([1,1,2])
 activ_func = torch.nn.ELU()
 loss_func = loss_funcs[train_type]
-cnn_out_2_u_hat = CNN_equalizer.cnn_out_2_u_hat_funcs[train_type]
+cnn_out_2_u_hat = cnn_equalizer.cnn_out_2_u_hat_funcs[train_type]
 ### Training hyperparameter
 batches_per_epoch = 300
 batch_size_per_epoch = [100, 300, 500]
@@ -130,7 +130,7 @@ for lr in lr_steps:
             for SNR_dB in SNR_dB_steps:
                 print(f'training model with lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB} dB, for {mod_format}-{M}')
                 dd_system = initialize_dd_system()
-                cnn_equalizer, optimizer, scheduler = initialize_CNN_optimizer(lr)
+                cnn_eq, optimizer, scheduler = initialize_CNN_optimizer(lr)
                 if save_progress:
                     progress_file_path = f"{folder_path}/progress_{io_tool.make_file_name(lr, L_link, alpha, SNR_dB)}.txt"
                     io_tool.init_progress_file(progress_file_path)

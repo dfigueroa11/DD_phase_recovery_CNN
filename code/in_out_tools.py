@@ -10,7 +10,6 @@ import argparse
 
 import help_functions as hlp
 from DD_system import DD_system
-import CNN_equalizer
 from performance_metrics import get_alphabets
 import data_conversion_tools
 

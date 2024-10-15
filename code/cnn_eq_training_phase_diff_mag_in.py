@@ -8,7 +8,7 @@ import sys
 
 import help_functions as hlp
 import DD_system
-import CNN_equalizer
+import cnn_equalizer
 
 def create_results_folder(path,n_copy):
     try:
@@ -29,19 +29,19 @@ def initialize_dd_system():
                                 L_link=L_link, R_sym=R_sym, beta2=beta2)
 
 def initialize_CNN_optimizer(lr):
-    cnn_equalizer = CNN_equalizer.CNN_equalizer(num_ch, ker_lens, strides, activ_func)
-    cnn_equalizer.to(device)
-    optimizer = optim.Adam(cnn_equalizer.parameters(), eps=1e-07, lr=lr)
-    return cnn_equalizer, optimizer
+    cnn_eq = cnn_equalizer.CNN_equalizer(num_ch, ker_lens, strides, activ_func)
+    cnn_eq.to(device)
+    optimizer = optim.Adam(cnn_eq.parameters(), eps=1e-07, lr=lr)
+    return cnn_eq, optimizer
 
 def train_CNN():
     loss_evolution = [-1]
     loss_func = MSELoss(reduction='mean')
-    cnn_equalizer.train()
+    cnn_eq.train()
     for batch_size in batch_size_per_epoch:
         for i in range(batches_per_epoch):
             _, x, y = dd_system.simulate_transmission(batch_size, N_sym, SNR_dB)
-            y_hat = cnn_equalizer(torch.cat((y,torch.kron(torch.abs(x),torch.eye(N_sim, device=device)[-1])), dim=1))
+            y_hat = cnn_eq(torch.cat((y,torch.kron(torch.abs(x),torch.eye(N_sim, device=device)[-1])), dim=1))
             
             phase_diff = hlp.abs_phase_diff(x)
             loss = loss_func(phase_diff, y_hat[:,:,1:])
@@ -57,8 +57,8 @@ def train_CNN():
 
 def eval_n_save_CNN():
     _, x, y = dd_system.simulate_transmission(100, N_sym, SNR_dB)
-    cnn_equalizer.eval()
-    y_hat = cnn_equalizer(torch.cat((y,torch.kron(torch.abs(x),torch.eye(N_sim, device=device)[-1])), dim=1))
+    cnn_eq.eval()
+    y_hat = cnn_eq(torch.cat((y,torch.kron(torch.abs(x),torch.eye(N_sim, device=device)[-1])), dim=1))
 
     phase_diff = hlp.abs_phase_diff(x)
     alphabet, SER = hlp.decode_and_ER(phase_diff,y_hat[:,:,1:])
@@ -125,6 +125,6 @@ for lr in lr_steps:
             for SNR_dB in SNR_dB_steps:
                 print(f'training model with lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB} dB')
                 dd_system = initialize_dd_system()
-                cnn_equalizer, optimizer = initialize_CNN_optimizer(lr)
+                cnn_eq, optimizer = initialize_CNN_optimizer(lr)
                 train_CNN()
                 eval_n_save_CNN()
