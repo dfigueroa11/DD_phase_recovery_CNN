@@ -102,7 +102,7 @@ L_link_save_fig = L_link_steps[[0,2,-1]]
 SNR_dB_steps = np.arange(5, 12, 2)                          # for sweep over SNR
 SNR_save_fig = SNR_dB_steps#[[0,5,-1]]
 
-train_type = CNN_equalizer.TRAIN_MSE_U_SLDMAG_PHASE
+train_type = CNN_equalizer.TRAIN_TYPES[args.loss_func]
 
 ### CNN definition
 num_ch = np.array([1,15,7,1])

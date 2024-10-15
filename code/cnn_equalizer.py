@@ -6,6 +6,10 @@ TRAIN_MSE_U_SYMBOLS = 0
 TRAIN_MSE_U_MAG_PHASE = 1
 TRAIN_MSE_U_SLDMAG_PHASE = 2
 TRAIN_CE_U_SYMBOLS = 3
+TRAIN_TYPES = [TRAIN_MSE_U_SYMBOLS,
+               TRAIN_MSE_U_MAG_PHASE,
+               TRAIN_MSE_U_SLDMAG_PHASE,
+               TRAIN_CE_U_SYMBOLS]
 
 class CNN_equalizer(nn.Module):
     '''

@@ -190,8 +190,15 @@ def process_args():
         type=int,
         help="modulation format order",
         default=2)
+    parser.add_argument(
+        "--loss_func",
+        "-l",
+        type=int,
+        help="selection of loss function: 0:TRAIN_MSE_U_SYMBOLS, 1:TRAIN_MSE_U_MAG_PHASE, 2:TRAIN_MSE_U_SLDMAG_PHASE, 3:TRAIN_CE_U_SYMBOLS",
+        choices=[0, 1, 2, 3],
+        default=1)
     return parser.parse_args()
-
+ 
 def make_file_name(lr, L_link, alpha, SNR_dB):
     lr_str = f"{lr:}".replace('.', 'p')
     alpha_str = f"{alpha:.1f}".replace('.', 'p')
