@@ -7,11 +7,9 @@ from matplotlib import gridspec
 from matplotlib.lines import Line2D
 import argparse
 
-
-import help_functions as hlp
+from cnn_equalizer import TRAIN_TYPES
 from DD_system import DD_system
 from performance_metrics import get_alphabets
-import data_conversion_tools
 
 def create_folder(path,n_copy):
     '''Creates the folder specified by path, if it already exists append a number to the path and creates the folder'''
@@ -182,7 +180,7 @@ def process_args():
         type=str,
         help="modulation format",
         choices=["ASK", "PAM", "DDQAM", "QAM"],
-        default="PAM")
+        default="ASK")
     parser.add_argument(
         "--order",
         "-o",
@@ -193,8 +191,8 @@ def process_args():
         "--loss_func",
         "-l",
         type=int,
-        help="selection of loss function: 0:TRAIN_MSE_U_SYMBOLS, 1:TRAIN_MSE_U_MAG_PHASE, 2:TRAIN_MSE_U_SLDMAG_PHASE, 3:TRAIN_CE_U_SYMBOLS",
-        choices=[0, 1, 2, 3],
+        help=f"int to select the loss function: {TRAIN_TYPES}",
+        choices=TRAIN_TYPES.keys(),
         default=1)
     return parser.parse_args()
  

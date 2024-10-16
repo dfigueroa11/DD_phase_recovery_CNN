@@ -102,8 +102,8 @@ L_link_steps = np.arange(0,35,6)*1e3      # for sweep over L_link
 L_link_save_fig = L_link_steps[[0,2,-1]]
 SNR_dB_steps = np.arange(-5, 12, 2)                          # for sweep over SNR
 SNR_save_fig = SNR_dB_steps[[0,5,-1]]
-train_type = cnn_equalizer.TRAIN_TYPES[args.loss_func]
-
+train_type = list(cnn_equalizer.TRAIN_TYPES.keys())[args.loss_func]
+train_type_name = cnn_equalizer.TRAIN_TYPES[train_type]
 ### CNN definition
 num_ch = np.array([1,15,7,1])
 ker_lens = np.array([11,11,7])
@@ -121,14 +121,14 @@ lr_save_fig = lr_steps
 checkpoint_per_epoch = 100
 save_progress = True
 
-folder_path = io_tool.create_folder(f"results/{mod_format}{M:}",0)
+folder_path = io_tool.create_folder(f"results/{train_type_name}/{mod_format}{M:}",0)
 io_tool.init_summary_file(f"{folder_path}/results.txt")
 
 for lr in lr_steps:
     for L_link in L_link_steps:
         for alpha in alpha_steps:
             for SNR_dB in SNR_dB_steps:
-                print(f'training model with lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB} dB, for {mod_format}-{M}, loss function: {train_type:.0f}')
+                print(f'training model with lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB} dB, for {mod_format}-{M}, loss function: {train_type_name}')
                 dd_system = initialize_dd_system()
                 cnn_eq, optimizer, scheduler = initialize_CNN_optimizer(lr)
                 if save_progress:
