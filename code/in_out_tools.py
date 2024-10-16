@@ -7,7 +7,7 @@ from matplotlib import gridspec
 from matplotlib.lines import Line2D
 import argparse
 
-from cnn_equalizer import TRAIN_TYPES
+from cnn_equalizer import TRAIN_TYPES, TRAIN_CE_U_SYMBOLS
 from DD_system import DD_system
 from performance_metrics import get_alphabets
 
@@ -94,6 +94,41 @@ def print_save_summary(path, lr, L_link, alpha, SNR_dB, SERs, MI):
         print(f"\tmag ER: {SERs[0]:>9.3e}   phase ER: {SERs[1]:>9.3e}   SER: {SERs[2]:>9.3e}   MI: {MI:>6.3f}")
 
 def save_fig_summary(u, y, u_hat, cnn_out, dd_system: DD_system, train_type, folder_path, lr, L_link, alpha, SNR_dB):
+    if train_type == TRAIN_CE_U_SYMBOLS:
+        save_fig_summary_ce(u, y, u_hat, cnn_out, dd_system, train_type, folder_path, lr, L_link, alpha, SNR_dB)
+        return
+    save_fig_summary_mse(u, y, u_hat, dd_system, folder_path, lr, L_link, alpha, SNR_dB)
+
+def save_fig_summary_ce(u, y, u_hat, cnn_out, dd_system: DD_system, train_type, folder_path, lr, L_link, alpha, SNR_dB):
+    _, _, constellation = get_alphabets(dd_system, SNR_dB)
+    subplot_dim = get_subplot_dim(constellation.numel())
+    fig, axs = plt.subplots(subplot_dim[0], subplot_dim[1], figsize=(15,9))
+    for i, tx_sym in enumerate(constellation):
+        sym_idx = np.flatnonzero(np.isclose(u, tx_sym, rtol=1e-3))
+        ax: axes.Axes
+        ax = axs.flatten()[i]
+        for j, rx_sym in enumerate(constellation):
+            app_j = cnn_out[:,j,:].flatten()
+            ax.hist(app_j[sym_idx], 100, alpha=0.5, density=True, label=f"r={np.real(rx_sym):.1f}+{np.imag(rx_sym):.1f}j")
+        ax.set_title(f"APPs given u={np.real(tx_sym):.1f}+{np.imag(tx_sym):.1f}j")
+        ax.legend()
+        ax.grid()
+    fig.savefig(f"{folder_path}/{make_file_name(lr, L_link, alpha, SNR_dB)}.png")
+    plt.close()
+
+def get_subplot_dim(n):
+    if n == 1: return (1,1)
+    if n == 2: return (1,2)
+    if n == 3: return (1,3)
+    if n == 4: return (2,2)
+    if n <= 6: return (2,3)
+    if n <= 8: return (2,4)
+    if n <= 9: return (3,3)
+    if n <= 12: return (3,4)
+    if n <= 16: return (4,4)
+    return -1
+
+def save_fig_summary_mse(u, y, u_hat, dd_system: DD_system, folder_path, lr, L_link, alpha, SNR_dB):
     alphabets = get_alphabets(dd_system, SNR_dB)
     if dd_system.multi_mag_const and dd_system.multi_phase_const:
         fig = plt.figure(figsize=(15,9))
@@ -132,10 +167,10 @@ def plot_constellation(ax, u, u_hat, alphabet):
     '''
     ax.set_title("Constellation diagram")
     legend_elements = []
-    for i, sym in enumerate(alphabet):
-        idx = np.flatnonzero(np.isclose(u,sym))
+    for i, tx_sym in enumerate(alphabet):
+        idx = np.flatnonzero(np.isclose(u,tx_sym))
         ax.scatter(np.real(u_hat[idx]), np.imag(u_hat[idx]), alpha=0.01)
-        legend_elements.append(Line2D([0], [0], marker='o', color='w', label=f'CNN out given u={np.real(sym):.1f}+{np.imag(sym):.1f}j',
+        legend_elements.append(Line2D([0], [0], marker='o', color='w', label=f'CNN out given u={np.real(tx_sym):.1f}+{np.imag(tx_sym):.1f}j',
                                       markerfacecolor=f'C{i}', markersize=10))
     ax.scatter(np.real(alphabet), np.imag(alphabet), c='k')
     legend_elements.append(Line2D([0], [0], marker='o', color='w', label='ideal', markerfacecolor='k', markersize=10))
@@ -186,14 +221,14 @@ def process_args():
         "-o",
         type=int,
         help="modulation format order",
-        default=2)
+        default=4)
     parser.add_argument(
         "--loss_func",
         "-l",
         type=int,
         help=f"int to select the loss function: {TRAIN_TYPES}",
         choices=TRAIN_TYPES.keys(),
-        default=1)
+        default=5)
     return parser.parse_args()
  
 def make_file_name(lr, L_link, alpha, SNR_dB):
