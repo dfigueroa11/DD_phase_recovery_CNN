@@ -20,7 +20,7 @@ class CNN_equalizer(nn.Module):
     Class implementing the CNN equalizer
     '''
     
-    def __init__(self, num_ch, ker_lens, strides, activ_func, groups_list=None):
+    def __init__(self, num_ch, ker_lens, strides, activ_func, groups_list=None, activ_func_last_layer=None):
         '''
         Arguments:
         num_ch:         list with the number of input channels of each layer and number of output channel of the last layer 
@@ -38,6 +38,7 @@ class CNN_equalizer(nn.Module):
         for ch_in, ch_out, ker_len, stride, groups in zip(num_ch[:-1], num_ch[1:], ker_lens, strides, groups_list):
             self.conv_layers.append(nn.Conv1d(ch_in, ch_out, ker_len, stride, (ker_len-1)//2, groups=groups))
         self.activ_func = activ_func
+        self.activ_func_last_layer = activ_func_last_layer
 
     def forward(self, y):
         '''
@@ -52,6 +53,8 @@ class CNN_equalizer(nn.Module):
         for conv_layer in self.conv_layers[:-1]:
             out = self.activ_func(conv_layer(out))
         out = self.conv_layers[-1](out)
+        if self.activ_func_last_layer is not None:
+            out = self.activ_func_last_layer(out)
         return out
     
 cnn_out_2_u_hat_funcs = {TRAIN_MSE_U_SYMBOLS: dconv_tools.mag_phase_2_complex,

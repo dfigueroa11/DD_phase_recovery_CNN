@@ -1,6 +1,6 @@
 import torch
 import torch.optim as optim
-from torch.nn import MSELoss 
+from torch.nn import MSELoss, Softmax
 
 import numpy as np
 
@@ -24,6 +24,7 @@ def initialize_CNN_optimizer(lr):
     num_ch_aux = num_ch.copy()
     strides_aux = strides.copy()
     ker_lens_aux = ker_lens.copy()
+    activ_func_last_layer = None
     # if modulation have multiple phases and magnitudes stack two CNN in parallel for each component.
     if dd_system.multi_mag_const and dd_system.multi_phase_const:
         groups_list = [1]+[2]*(len(ker_lens)-1)
@@ -33,7 +34,8 @@ def initialize_CNN_optimizer(lr):
         num_ch_aux = np.append(num_ch_aux,M)
         strides_aux = np.append(strides_aux,1)
         ker_lens_aux = np.append(ker_lens_aux, 7)
-    cnn_eq = cnn_equalizer.CNN_equalizer(num_ch_aux, ker_lens_aux, strides_aux, activ_func, groups_list)
+        activ_func_last_layer = Softmax(dim=1)
+    cnn_eq = cnn_equalizer.CNN_equalizer(num_ch_aux, ker_lens_aux, strides_aux, activ_func, groups_list, activ_func_last_layer)
     cnn_eq.to(device)
     optimizer = optim.Adam(cnn_eq.parameters(), eps=1e-07, lr=lr)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5)
@@ -56,7 +58,7 @@ def train_CNN(loss_function):
         print()
 
 def checkpoint_tasks(y, u, cnn_out, batch_size, progress, loss):
-    u_hat = cnn_out_2_u_hat(cnn_out, dd_system)
+    u_hat = cnn_out_2_u_hat(cnn_out, dd_system, Ptx_dB=SNR_dB)
     SERs = perf_met.get_all_SERs(u, u_hat, dd_system, SNR_dB)
     scheduler.step(sum(SERs))
     curr_lr = scheduler.get_last_lr()
@@ -70,7 +72,7 @@ def eval_n_save_CNN():
     cnn_eq.eval()
     cnn_out = cnn_eq(y).detach().cpu()
 
-    u_hat = cnn_out_2_u_hat(cnn_out, dd_system)
+    u_hat = cnn_out_2_u_hat(cnn_out, dd_system, Ptx_dB=SNR_dB)
     u = u.detach().cpu()
     SERs = perf_met.get_all_SERs(u, u_hat, dd_system, SNR_dB)
     MI = perf_met.get_MI(u, u_hat, dd_system, SNR_dB)
