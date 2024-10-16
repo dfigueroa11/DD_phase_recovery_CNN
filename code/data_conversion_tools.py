@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from DD_system import DD_system
 
 
-def mag_phase_2_complex(x, dd_system: DD_system):
+def mag_phase_2_complex(x, dd_system: DD_system, **kwargs):
     ''' Converts from mag phase representation to complex number
     
     Argument:
@@ -16,7 +16,7 @@ def mag_phase_2_complex(x, dd_system: DD_system):
         return x
     return x[:,0:1,:]*torch.exp(1j*x[:,1:,:])
 
-def SLDmag_phase_2_complex(x, dd_system: DD_system):
+def SLDmag_phase_2_complex(x, dd_system: DD_system, **kwargs):
     ''' Converts the output of the CNN to the estimates of the transmitted symbols u
 
     Arguments:
@@ -74,5 +74,6 @@ def idx_2_one_hot(idx):
     one_hot = F.one_hot(idx.squeeze(1))
     return one_hot.permute(0, 2, 1).to(torch.float32)  # Shape becomes (100, 4, 300)
 
-def APPs_2_u(APPs, dd_system: DD_system):
-    return dd_system.constellation[torch.argmax(APPs, dim=1, keepdim=True)]
+def APPs_2_u(APPs, dd_system: DD_system, Ptx_dB=0):
+    Ptx_lin = torch.tensor([10**(Ptx_dB/10)], dtype=torch.float32, device=dd_system.device)
+    return torch.sqrt(Ptx_lin)*dd_system.constellation[torch.argmax(APPs, dim=1, keepdim=True)]
