@@ -128,7 +128,7 @@ for lr in lr_steps:
     for L_link in L_link_steps:
         for alpha in alpha_steps:
             for SNR_dB in SNR_dB_steps:
-                print(f'training model with lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB} dB, for {mod_format}-{M}, loss function: {train_type_name}')
+                print(f'training model with lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB} dB, for {mod_format}-{M}, train type: {train_type_name}')
                 dd_system = initialize_dd_system()
                 cnn_eq, optimizer, scheduler = initialize_CNN_optimizer(lr)
                 if save_progress:
