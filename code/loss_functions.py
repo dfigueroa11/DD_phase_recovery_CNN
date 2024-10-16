@@ -39,9 +39,8 @@ def MSE_u_SLDmag_phase_2_cnn_out_phase_fix(u_idx, u, cnn_out:torch.Tensor, dd_sy
         loss_mag = mse_loss(u_mag_phase[:,0,:], cnn_out[:,0,:])
     return (loss_mag+loss_ph)/cnn_out.size(dim=1)
 
-def ce_u_symbols_cnn_out(u_idx, u, cnn_out, dd_system: DD_system):
-    u_one_hot = dconv_tools.idx_2_one_hot(u_idx)
-    return cross_entropy(input=cnn_out, target=u_one_hot)
+def ce_u_symbols_cnn_out(u_idx:torch.Tensor, u:torch.Tensor, cnn_out:torch.Tensor, dd_system:DD_system):
+    return cross_entropy(input=cnn_out, target=u_idx.squeeze())
 
 loss_funcs = {cnn_equalizer.TRAIN_MSE_U_SYMBOLS: MSE_u_symbols_2_cnn_out,
               cnn_equalizer.TRAIN_MSE_U_MAG_PHASE: MSE_u_mag_phase_2_cnn_out,
