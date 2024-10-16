@@ -109,9 +109,11 @@ def save_fig_summary_ce(u, y, u_hat, cnn_out, dd_system: DD_system, train_type, 
         ax = axs.flatten()[i]
         for j, rx_sym in enumerate(constellation):
             app_j = cnn_out[:,j,:].flatten()
-            ax.hist(app_j[sym_idx], 100, alpha=0.5, density=True, label=f"r={np.real(rx_sym):.1f}+{np.imag(rx_sym):.1f}j")
+            ax.hist(app_j[sym_idx], bins=35, range=(0,1), density=True, log=True, histtype="step", label=f"r={np.real(rx_sym):.1f}+{np.imag(rx_sym):.1f}j")
         ax.set_title(f"APPs given u={np.real(tx_sym):.1f}+{np.imag(tx_sym):.1f}j")
         ax.legend()
+        ax.set_xlabel("APP estimate")
+        ax.set_ylabel("pdf estimate")
         ax.grid()
     fig.savefig(f"{folder_path}/{make_file_name(lr, L_link, alpha, SNR_dB)}.png")
     plt.close()
@@ -177,7 +179,7 @@ def plot_constellation(ax, u, u_hat, alphabet):
     ax.legend(handles=legend_elements, loc='upper right')
     ax.grid()
 
-def plot_histogram(ax1, ax2, y, u_hat, u, alphabet, names):
+def plot_histogram(ax1:axes.Axes, ax2:axes.Axes, y, u_hat, u, alphabet, names):
     '''Plot the constellation diagram
     
     Arguments:
@@ -196,12 +198,14 @@ def plot_histogram(ax1, ax2, y, u_hat, u, alphabet, names):
     for val in alphabet:
         line = ax2.axvline(x=val, color='red', linestyle='--')
         idx = np.flatnonzero(np.isclose(u, val, rtol=1e-3))
-        _, _, hist = ax2.hist(u_hat[idx], 200, alpha=0.5, density=True)
+        _, _, hist = ax2.hist(u_hat[idx], 200, log=True, histtype="step", density=True)
         elements.append(hist[0])
         legends.append(f"CNN_out given u={val:.2f}")
     elements.append(line)
     legends.append("ideal")
     ax2.legend(elements,legends, loc='upper right')
+    ax2.set_xlabel(names[1])
+    ax2.set_ylabel("pdf estimate")
     ax2.grid()
 
 def process_args():
