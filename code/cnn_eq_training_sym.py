@@ -101,7 +101,7 @@ alpha_save_fig = alpha_steps
 L_link_steps = np.arange(0,35,6)*1e3      # for sweep over L_link
 L_link_save_fig = L_link_steps[[0,2,-1]]
 SNR_dB_steps = np.arange(-5, 12, 2)                          # for sweep over SNR
-SNR_save_fig = SNR_dB_steps[[0,5,-1]]
+SNR_save_fig = SNR_dB_steps[[0,5,-2,-1]]
 train_type = list(cnn_equalizer.TRAIN_TYPES.keys())[args.loss_func]
 train_type_name = cnn_equalizer.TRAIN_TYPES[train_type]
 ### CNN definition
