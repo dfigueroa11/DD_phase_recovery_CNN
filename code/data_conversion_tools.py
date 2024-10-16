@@ -14,7 +14,7 @@ def mag_phase_2_complex(x, dd_system: DD_system):
         return torch.exp(1j*x)
     if not dd_system.multi_phase_const:
         return x
-    return x[:,0,:]*torch.exp(1j*x[:,1,:])
+    return x[:,0:1,:]*torch.exp(1j*x[:,1:,:])
 
 def SLDmag_phase_2_complex(x, dd_system: DD_system):
     ''' Converts the output of the CNN to the estimates of the transmitted symbols u
@@ -35,7 +35,7 @@ def SLDmag_phase_2_complex(x, dd_system: DD_system):
     h0_rx=torch.max(dd_system.rx_filt)
     if not dd_system.multi_phase_const:
         return torch.sign(x)*torch.sqrt(torch.abs(x)/h0_rx)/torch.abs(h0_tx)
-    return torch.sign(x[:,0,:])*torch.sqrt(torch.abs(x[:,0,:])/h0_rx)/torch.abs(h0_tx)*torch.exp(1j*x[:,1,:])
+    return torch.sign(x[:,0:1,:])*torch.sqrt(torch.abs(x[:,0:1,:])/h0_rx)/torch.abs(h0_tx)*torch.exp(1j*x[:,1:,:])
 
 def complex_2_mag_phase(x, dd_system: DD_system):
     ''' Converts from mag phase representation to complex number
