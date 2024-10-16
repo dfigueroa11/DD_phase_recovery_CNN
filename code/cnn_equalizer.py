@@ -6,11 +6,13 @@ TRAIN_MSE_U_SYMBOLS = 0
 TRAIN_MSE_U_MAG_PHASE = 1
 TRAIN_MSE_U_MAG_PHASE_PHASE_FIX = 2
 TRAIN_MSE_U_SLDMAG_PHASE = 3
-TRAIN_CE_U_SYMBOLS = 4
+TRAIN_MSE_U_SLDMAG_PHASE_PHASE_FIX = 4
+TRAIN_CE_U_SYMBOLS = 5
 TRAIN_TYPES = {TRAIN_MSE_U_SYMBOLS: "TRAIN_MSE_U_SYMBOLS",
                TRAIN_MSE_U_MAG_PHASE: "TRAIN_MSE_U_MAG_PHASE",
                TRAIN_MSE_U_MAG_PHASE_PHASE_FIX: "TRAIN_MSE_U_MAG_PHASE_PHASE_FIX",
                TRAIN_MSE_U_SLDMAG_PHASE: "TRAIN_MSE_U_SLDMAG_PHASE",
+               TRAIN_MSE_U_SLDMAG_PHASE_PHASE_FIX: "TRAIN_MSE_U_SLDMAG_PHASE_PHASE_FIX",
                TRAIN_CE_U_SYMBOLS: "TRAIN_CE_U_SYMBOLS"}
 
 class CNN_equalizer(nn.Module):
@@ -56,4 +58,5 @@ cnn_out_2_u_hat_funcs = {TRAIN_MSE_U_SYMBOLS: dconv_tools.mag_phase_2_complex,
                          TRAIN_MSE_U_MAG_PHASE: dconv_tools.mag_phase_2_complex,
                          TRAIN_MSE_U_MAG_PHASE_PHASE_FIX: dconv_tools.mag_phase_2_complex,
                          TRAIN_MSE_U_SLDMAG_PHASE: dconv_tools.SLDmag_phase_2_complex,
+                         TRAIN_MSE_U_SLDMAG_PHASE_PHASE_FIX: dconv_tools.SLDmag_phase_2_complex,
                          TRAIN_CE_U_SYMBOLS: dconv_tools.APPs_2_u}
