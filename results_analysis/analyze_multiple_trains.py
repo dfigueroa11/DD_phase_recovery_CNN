@@ -40,9 +40,9 @@ def find_convergence_rate(all_data):
     return 1-np.mean(np.isnan(all_data[:,:,-1]),axis=0)
 
 def write_ser_txt(data, conv_rate, path_destination):
-    with open(f"{path_destination}/SER_results.txt", 'w') as file:
-        file.write("lr,L_link_km,alpha,SNR_dB,(min_mag_ER,mean_mag_ER,max_mag_ER,min_phase_ER,"+
-                   "mean_phase_ER,max_phase_ER),min_SER,mean_SER,max_SER,min_MI,mean_MI,max_MI,conv_rate\n")
+    with open(f"{path_destination}/results.txt", 'w') as file:
+        file.write("lr,L_link_km,alpha,SNR_dB,min_mag_ER,mean_mag_ER,max_mag_ER,min_phase_ER,"+
+                   "mean_phase_ER,max_phase_ER,min_SER,mean_SER,max_SER,min_MI,mean_MI,max_MI,conv_rate\n")
         for i in range(data.shape[1]):
             line = f"{data[0,i,0]},{data[0,i,1]},{data[0,i,2]},{data[0,i,3]}"
             for j in range(4, data.shape[-1]):
@@ -75,7 +75,7 @@ def save_best_images(data, idx, source_path, result_path, folder):
 
 
 def analyze_ser_txt(num_folders, path, folder, result_path):
-    all_data = read_all_data(num_folders, path, folder, "SER_results.txt")
+    all_data = read_all_data(num_folders, path, folder, "results.txt")
     all_data = find_replace_non_convergence(all_data, threshold=1e-4)
     data, idx = pick_max_min_mean_data(all_data)
     conv_rate = find_convergence_rate(all_data)
@@ -96,12 +96,22 @@ if __name__=="__main__":
     path = "/Users/diegofigueroa/Desktop/results"
     path_post_processing = f"{path}_post_processing"
 
-    folders = ["PAM2_sym","ASK4_sym","PAM4_sym","ASK2_sym"]
+    loss_funcs = ["TRAIN_MSE_U_SYMBOLS",
+                  "TRAIN_MSE_U_MAG_PHASE",
+                  "TRAIN_MSE_U_MAG_PHASE_PHASE_FIX"]
+                #   "TRAIN_MSE_U_SLDMAG_PHASE",
+                #   "TRAIN_MSE_U_SLDMAG_PHASE_PHASE_FIX",
+                #   "TRAIN_CE_U_SYMBOLS"]
+
+    mod_formats = ["PAM2","ASK4","PAM4","ASK2", "QAM4"]
     L_link_steps = np.arange(0,35,6)
     SNR_dB_steps = np.arange(-5, 12, 2)
-
-    for folder in folders:
-        result_path = create_results_folder(f"{path_post_processing}/{folder}",0)
-        analyze_ser_txt(5, path, folder, result_path)
-        analyze_progress_txt(L_link_steps, SNR_dB_steps, 5, path, path_post_processing, folder, result_path)
-        # save_best_worst_images(best_ser_data, best_idx, result_path, folder)
+    num_folders = 3
+    for loss_func in loss_funcs:
+        for mod_format in mod_formats:
+            print(f"Processing: {loss_func}/{mod_format}")
+            folder = f"{loss_func}/{mod_format}"
+            result_path = create_results_folder(f"{path_post_processing}/{folder}",0)
+            analyze_ser_txt(num_folders, path, folder, result_path)
+            # analyze_progress_txt(L_link_steps, SNR_dB_steps, num_folders, path, path_post_processing, folder, result_path)
+            # save_best_worst_images(best_ser_data, best_idx, result_path, folder)
