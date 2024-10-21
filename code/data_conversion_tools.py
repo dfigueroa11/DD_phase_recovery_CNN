@@ -31,8 +31,8 @@ def SLDmag_phase_2_complex(x, dd_system: DD_system, **kwargs):
     '''
     if not dd_system.multi_mag_const:
         return torch.exp(1j*x)
-    h0_tx=dd_system.tx_filt[0,0,dd_system.N_taps//2]
-    h0_rx=torch.max(dd_system.rx_filt)
+    h0_tx = dd_system.tx_filt[0,0,dd_system.N_taps//2].cpu()
+    h0_rx = torch.max(dd_system.rx_filt).cpu()
     if not dd_system.multi_phase_const:
         return torch.sign(x)*torch.sqrt(torch.abs(x)/h0_rx)/torch.abs(h0_tx)
     return torch.sign(x[:,0:1,:])*torch.sqrt(torch.abs(x[:,0:1,:])/h0_rx)/torch.abs(h0_tx)*torch.exp(1j*x[:,1:,:])
