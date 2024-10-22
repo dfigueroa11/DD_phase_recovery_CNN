@@ -75,5 +75,5 @@ def idx_2_one_hot(idx):
     return one_hot.permute(0, 2, 1).to(torch.float32)  # Shape becomes (100, 4, 300)
 
 def APPs_2_u(APPs, dd_system: DD_system, Ptx_dB=0):
-    Ptx_lin = torch.tensor([10**(Ptx_dB/10)], dtype=torch.float32, device=dd_system.device)
-    return torch.sqrt(Ptx_lin)*dd_system.constellation[torch.argmax(APPs, dim=1, keepdim=True)]
+    Ptx_lin = torch.tensor([10**(Ptx_dB/10)], dtype=torch.float32)
+    return torch.sqrt(Ptx_lin)*dd_system.constellation[torch.argmax(APPs, dim=1, keepdim=True)].cpu()

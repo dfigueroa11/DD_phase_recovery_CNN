@@ -54,7 +54,7 @@ class DD_system():
         y:  the samples after the transmission (Tensor of size (batch_size, 1, N_sym*N_os))
         '''
         Ptx_lin = torch.tensor([10**(Ptx_dB/10)], device=self.device, dtype=torch.float32)
-        ui = torch.randint(torch.numel(self.constellation),[batch_size, 1, N_sym])
+        ui = torch.randint(torch.numel(self.constellation),[batch_size, 1, N_sym], device=self.device)
         u = torch.sqrt(Ptx_lin)*self.constellation[ui]
         if self.diff_encoder is not None:
             x = self.diff_encoder.encode(u)
