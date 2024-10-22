@@ -76,7 +76,7 @@ def save_best_images(data, idx, source_path, result_path, folder):
 
 def analyze_ser_txt(num_folders, path, folder, result_path):
     all_data = read_all_data(num_folders, path, folder, "results.txt")
-    all_data = find_replace_non_convergence(all_data, threshold=1e-4)
+    all_data = find_replace_non_convergence(all_data, threshold=1e-3)
     data, idx = pick_max_min_mean_data(all_data)
     conv_rate = find_convergence_rate(all_data)
     write_ser_txt(data, conv_rate, result_path)
@@ -98,12 +98,12 @@ if __name__=="__main__":
 
     loss_funcs = ["TRAIN_MSE_U_SYMBOLS",
                   "TRAIN_MSE_U_MAG_PHASE",
-                  "TRAIN_MSE_U_MAG_PHASE_PHASE_FIX"]
-                #   "TRAIN_MSE_U_SLDMAG_PHASE",
-                #   "TRAIN_MSE_U_SLDMAG_PHASE_PHASE_FIX",
+                  "TRAIN_MSE_U_MAG_PHASE_PHASE_FIX",
+                  "TRAIN_MSE_U_SLDMAG_PHASE",
+                  "TRAIN_MSE_U_SLDMAG_PHASE_PHASE_FIX"]
                 #   "TRAIN_CE_U_SYMBOLS"]
 
-    mod_formats = ["PAM2","ASK4","PAM4","ASK2", "QAM4"]
+    mod_formats = ["ASK2","ASK4","PAM2","PAM4", "QAM4"]
     L_link_steps = np.arange(0,35,6)
     SNR_dB_steps = np.arange(-5, 12, 2)
     num_folders = 3

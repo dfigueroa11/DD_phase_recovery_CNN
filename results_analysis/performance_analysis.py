@@ -75,12 +75,12 @@ if __name__=="__main__":
     path = "/Users/diegofigueroa/Desktop/results_post_processing"
     loss_funcs = ["TRAIN_MSE_U_SYMBOLS",
                   "TRAIN_MSE_U_MAG_PHASE",
-                  "TRAIN_MSE_U_MAG_PHASE_PHASE_FIX"]
-                #   "TRAIN_MSE_U_SLDMAG_PHASE",
-                #   "TRAIN_MSE_U_SLDMAG_PHASE_PHASE_FIX",
+                  "TRAIN_MSE_U_MAG_PHASE_PHASE_FIX",
+                  "TRAIN_MSE_U_SLDMAG_PHASE",
+                  "TRAIN_MSE_U_SLDMAG_PHASE_PHASE_FIX"]
                 #   "TRAIN_CE_U_SYMBOLS"]
 
-    mod_formats = ["ASK2","ASK4","PAM2","PAM2", "QAM4"]
+    mod_formats = ["ASK2","ASK4","PAM2","PAM4", "QAM4"]
     file_name = "results.txt"
     save_fig = False
     pdf = PdfPages(f"cnn_results_all.pdf") if save_fig else None
@@ -88,6 +88,6 @@ if __name__=="__main__":
         for mod_format in mod_formats:
             folder = f"{loss_func}/{mod_format}"
             path_file = f"{path}/{folder}/{file_name}"
-            make_all_plots(path_file, SNR_plot=True, Llink_plot=True, pdf=pdf)
+            make_all_plots(path_file, SNR_plot=True, Llink_plot=False, pdf=pdf)
         if save_fig:
             pdf.close()
