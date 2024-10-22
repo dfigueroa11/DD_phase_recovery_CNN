@@ -107,9 +107,9 @@ SNR_save_fig = SNR_dB_steps[[0,5,-2,-1]]
 train_type = list(cnn_equalizer.TRAIN_TYPES.keys())[args.loss_func]
 train_type_name = cnn_equalizer.TRAIN_TYPES[train_type]
 ### CNN definition
-num_ch = np.array([1,15,7,1])
-ker_lens = np.array([11,11,7])
-strides = np.array([1,1,2])
+num_ch = np.array([1,15,30,15,7,3,1])
+ker_lens = np.array([31,21,17,11,7,5])
+strides = np.array([1,1,1,1,1,2])
 activ_func = torch.nn.ELU()
 loss_func = loss_funcs[train_type]
 cnn_out_2_u_hat = cnn_equalizer.cnn_out_2_u_hat_funcs[train_type]
