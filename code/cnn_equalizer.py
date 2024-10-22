@@ -34,9 +34,11 @@ class CNN_equalizer(nn.Module):
         if groups_list is None:
             groups_list = [1]*len(ker_lens)
 
+        self.complexity_per_symbol = 0
         self.conv_layers = nn.ModuleList()
         for ch_in, ch_out, ker_len, stride, groups in zip(num_ch[:-1], num_ch[1:], ker_lens, strides, groups_list):
             self.conv_layers.append(nn.Conv1d(ch_in, ch_out, ker_len, stride, (ker_len-1)//2, groups=groups))
+            self.complexity_per_symbol += self.conv_layers[-1].weight.numel()
         self.activ_func = activ_func
         self.activ_func_last_layer = activ_func_last_layer
 
