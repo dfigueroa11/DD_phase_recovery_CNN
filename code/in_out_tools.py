@@ -74,6 +74,15 @@ def init_summary_file(path):
     '''
     with open(path, 'a') as file:
         file.write("lr,L_link_km,alpha,SNR_dB,mag_ER,phase_ER,SER,MI\n")
+
+def write_complexity_in_summary_file(path, complexity):
+    ''' creates the file to save the results, and writes the first row with the variable names
+
+    Arguments:
+    path:           path of the file to save the results
+    '''
+    with open(path, 'a') as file:
+        file.write(f"# complexity per symbol: {complexity:.0f}\n")
         
 def print_save_summary(path, lr, L_link, alpha, SNR_dB, SERs, MI):
     ''' Print and saves the summary of the training process
