@@ -38,12 +38,15 @@ class Differential_encoder():
         self.phase_list = torch.torch.unique(torch.round(torch.angle(constellation), decimals=10)).to(device)
         self.phase_list,_ = torch.sort(torch.remainder(self.phase_list,2*torch.pi))
         
-    def encode(self, u): 
+    def encode(self, u: torch.Tensor): 
         '''
         Apply the differential encoding
 
         Arguments:
         u:      the incoming symbols (Tensor of size (batch_size, 1, N_sym))
+
+        Returns:
+        x:      output symbols (Tensor of size (batch_size, 1, N_sym))
         '''
         u_phase_idx = torch.argmin(torch.abs(self.phase_list[...,None]-torch.remainder(torch.angle(u),2*torch.pi)), dim=1, keepdim=True)
         x_phase_idx = self.diff_mapping(u_phase_idx)

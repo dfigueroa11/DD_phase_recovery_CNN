@@ -11,7 +11,7 @@ from cnn_equalizer import TRAIN_TYPES, TRAIN_CE_U_SYMBOLS
 from DD_system import DD_system
 from performance_metrics import get_alphabets
 
-def create_folder(path,n_copy):
+def create_folder(path: str,n_copy: int):
     '''Creates the folder specified by path, if it already exists append a number to the path and creates the folder'''
     try:
         real_path = f"{path}_{n_copy}"
@@ -22,51 +22,45 @@ def create_folder(path,n_copy):
         print(f"directory '{path}' already exist, try to create '{path}_{n_copy}'")
         return create_folder(path,n_copy)
 
-def init_progress_file(path):
+def init_progress_file(path: str):
     ''' creates the file to save the progress, and writes the first row with the variable names
 
     Arguments:
     path:           path of the file to save the results
-    multi_mag:      whether the constellation have multiple magnitudes or not
-    multi_phase:    whether the constellation have multiple phases or not
     '''
     with open(path, 'a') as file:
         file.write(f"Batch_size,progress,lr,loss,mag_ER,phase_ER,SER,MI\n")
 
-def save_progress(path, batch_size, progress, lr, loss, SERs, MI):
+def save_progress(path: str, batch_size: int, progress: float, lr: float, loss: float, SERs: list, MI: float):
     ''' save the progress
 
     Arguments:
     path:           path of the file to save the results
-    multi_mag:      whether the constellation have multiple magnitudes or not
-    multi_phase:    whether the constellation have multiple phases or not
     batch_size:     int
     progress:       progress of the current epoch (float)
     lr:             learning rate
     loss:           float
-    SERs:           [mag ER, phase, ER, SER] or [SER] depending on multi_mag, multi_phase
+    SERs:           [mag ER, phase, ER, SER]
     MI:             Mutual information float
     '''
     with open(path, 'a') as file:
         file.write(f"{batch_size},{progress:.5},{lr[0]:.5e},{loss:.5e},{SERs[0]:.5e},{SERs[1]:.5e},{SERs[2]:.5e},{MI:.5e}\n")
 
-def print_progress(batch_size, progress, lr, loss, SERs, MI):
+def print_progress(batch_size: int, progress: float, lr: float, loss: float, SERs: list, MI: float):
     '''Print the training progress
 
     Arguments:
-    multi_mag:      whether the constellation have multiple magnitudes or not
-    multi_phase:    whether the constellation have multiple phases or not
     batch_size:     int
     progress:       progress of the current epoch (float)
     lr:             learning rate
     loss:           float
-    SERs:           [mag ER, phase, ER, SER] or [SER] depending on multi_mag, multi_phase
+    SERs:           [mag ER, phase, ER, SER]
     MI:             Mutual information float
     '''
     print(f"   Batch size:{batch_size:>4}  prog:{progress:>6.1%}  lr:{lr[0]:>8.2e}  loss:{loss:>9.3e}  "+
           f"mag ER:{SERs[0]:>8.2e}  ph ER:{SERs[1]:>8.2e}  SER:{SERs[2]:>8.2e}  MI:{MI:>4.2f}", end='\r')
 
-def init_summary_file(path):
+def init_summary_file(path: str):
     ''' creates the file to save the results, and writes the first row with the variable names
 
     Arguments:
@@ -75,40 +69,51 @@ def init_summary_file(path):
     with open(path, 'a') as file:
         file.write("lr,L_link_km,alpha,SNR_dB,mag_ER,phase_ER,SER,MI\n")
 
-def write_complexity_in_summary_file(path, complexity):
-    ''' creates the file to save the results, and writes the first row with the variable names
-
-    Arguments:
-    path:           path of the file to save the results
+def write_complexity_in_summary_file(path: str, complexity: float):
+    ''' writes to the file the complexity
     '''
     with open(path, 'a') as file:
         file.write(f"# complexity per symbol: {complexity:.0f}\n")
         
-def print_save_summary(path, lr, L_link, alpha, SNR_dB, SERs, MI):
+def print_save_summary(path: str, lr: float, L_link: float, alpha: float, SNR_dB: float, SERs: list, MI: float):
     ''' Print and saves the summary of the training process
 
     Arguments:
     path:           path of the file to save the results
-    multi_mag:      whether the constellation have multiple magnitudes or not
-    multi_phase:    whether the constellation have multiple phases or not
     lr:             learning rate
     L_link:         length of the SMF in meters (float) use if the channel presents CD
     alpha:          roll off factor (float between 0 and 1)
     SNR_dB:         SNR in dB used for the simulation (float)
-    SERs:           [mag ER, phase, ER, SER] or [SER] depending on multi_mag, multi_phase
+    SERs:           [mag ER, phase, ER, SER]
     MI:             Mutual information float
     '''
     with open(path, 'a') as file:
         file.write(f"{lr},{L_link*1e-3:.0f},{alpha},{SNR_dB},{SERs[0]:.10e},{SERs[1]:.10e},{SERs[2]:.10e},{MI:.10e}\n")
         print(f"\tmag ER: {SERs[0]:>9.3e}   phase ER: {SERs[1]:>9.3e}   SER: {SERs[2]:>9.3e}   MI: {MI:>6.3f}")
 
-def save_fig_summary(u, y, u_hat, cnn_out, dd_system: DD_system, train_type, folder_path, lr, L_link, alpha, SNR_dB):
+def save_fig_summary(u: torch.Tensor, y: torch.Tensor, u_hat: torch.Tensor, cnn_out: torch.Tensor, dd_system: DD_system, train_type: int,
+                     folder_path: str, lr: float, L_link:float, alpha: float, SNR_dB: float):
+    ''' makes and save the figure with the results
+
+    Arguments:
+    u:          Tensor with the transmitted symbols with shape (batch_size, 1, N_sym)
+    y:          Tensor with the signal at the input of the CNN with shape (batch_size, 1, N_os*N_sym)
+    u_hat:      Tensor with the received symbols with shape (batch_size, 1, N_sym)
+    cnn_out:    Tensor with the output of the CNN with shape (batch_size, C, N_sym), C=1|2|M (modulation order)
+    '''
     if train_type == TRAIN_CE_U_SYMBOLS:
-        save_fig_summary_ce(u, y, u_hat, cnn_out, dd_system, train_type, folder_path, lr, L_link, alpha, SNR_dB)
+        save_fig_summary_ce(u, cnn_out, dd_system, folder_path, lr, L_link, alpha, SNR_dB)
         return
     save_fig_summary_mse(u, y, u_hat, dd_system, folder_path, lr, L_link, alpha, SNR_dB)
 
-def save_fig_summary_ce(u, y, u_hat, cnn_out, dd_system: DD_system, train_type, folder_path, lr, L_link, alpha, SNR_dB):
+def save_fig_summary_ce(u: torch.Tensor, cnn_out: torch.Tensor, dd_system: DD_system, folder_path: str,
+                        lr: float, L_link: float, alpha: float, SNR_dB: float):
+    ''' makes and save the figure with the results
+
+    Arguments:
+    u:          Tensor with the transmitted symbols with shape (batch_size, 1, N_sym)
+    cnn_out:    Tensor with the output of the CNN with shape (batch_size, M, N_sym), M: modulation order
+    '''
     _, _, constellation = get_alphabets(dd_system, SNR_dB)
     subplot_dim = get_subplot_dim(constellation.numel())
     fig, axs = plt.subplots(subplot_dim[0], subplot_dim[1], figsize=(15,9))
@@ -127,7 +132,7 @@ def save_fig_summary_ce(u, y, u_hat, cnn_out, dd_system: DD_system, train_type, 
     fig.savefig(f"{folder_path}/{make_file_name(lr, L_link, alpha, SNR_dB)}.png")
     plt.close()
 
-def get_subplot_dim(n):
+def get_subplot_dim(n: int):
     if n == 1: return (1,1)
     if n == 2: return (1,2)
     if n == 3: return (1,3)
@@ -139,7 +144,15 @@ def get_subplot_dim(n):
     if n <= 16: return (4,4)
     return -1
 
-def save_fig_summary_mse(u, y, u_hat, dd_system: DD_system, folder_path, lr, L_link, alpha, SNR_dB):
+def save_fig_summary_mse(u: torch.Tensor, y: torch.Tensor, u_hat: torch.Tensor, dd_system: DD_system, folder_path: str,
+                         lr: float, L_link: float, alpha: float, SNR_dB: float):
+    ''' makes and save the figure with the results
+
+    Arguments:
+    u:          Tensor with the transmitted symbols with shape (batch_size, 1, N_sym)
+    y:          Tensor with the signal at the input of the CNN with shape (batch_size, 1, N_os*N_sym)
+    u_hat:      Tensor with the received symbols with shape (batch_size, 1, N_sym)
+    '''
     alphabets = get_alphabets(dd_system, SNR_dB)
     if dd_system.multi_mag_const and dd_system.multi_phase_const:
         fig = plt.figure(figsize=(15,9))
@@ -168,13 +181,13 @@ def save_fig_summary_mse(u, y, u_hat, dd_system: DD_system, folder_path, lr, L_l
         plt.close()
         return
 
-def plot_constellation(ax, u, u_hat, alphabet):
+def plot_constellation(ax: axes.Axes, u: torch.Tensor, u_hat: torch.Tensor, alphabet: torch.Tensor):
     '''Plot the constellation diagram
     
     Arguments:
     ax:         Matplotlib.axes.Axes to do the plot
-    y_hat:      output of the CNN (same shape as y_ideal)
-    alphabet:   contains the ideal output for reference
+    u_hat:      Tensor with the received symbols with shape (batch_size, 1, N_sym)
+    alphabet:   contains the ideal output for references 1D Tensor
     '''
     ax.set_title("Constellation diagram")
     legend_elements = []
@@ -188,15 +201,15 @@ def plot_constellation(ax, u, u_hat, alphabet):
     ax.legend(handles=legend_elements, loc='upper right')
     ax.grid()
 
-def plot_histogram(ax1:axes.Axes, ax2:axes.Axes, y, u_hat, u, alphabet, names):
+def plot_histogram(ax1:axes.Axes, ax2:axes.Axes, y: torch.Tensor, u_hat: torch.Tensor, u: torch.Tensor, alphabet: torch.Tensor, names: list[str]):
     '''Plot the constellation diagram
     
     Arguments:
     ax:         Matplotlib.axes.Axes to do the plot
-    y:          output of the DD channel
-    y_hat:      output of the CNN (same shape as y_ideal)
-    alphabet:   contains the ideal output for reference
-    name:       name for the plot, (Magnitude or Phase)
+    y:          Tensor with the signal at the input of the CNN with shape (batch_size, 1, N_os*N_sym)
+    u_hat:      Tensor with the received symbols with shape (batch_size, 1, N_sym)
+    u:          Tensor with the transmitted symbols with shape (batch_size, 1, N_sym)
+    alphabet:   contains the ideal output for references 1D Tensor
     '''
     ax1.set_title(names[0])
     ax1.hist(y, 200, alpha=0.5, density=True)
@@ -244,7 +257,7 @@ def process_args():
         default=5)
     return parser.parse_args()
  
-def make_file_name(lr, L_link, alpha, SNR_dB):
+def make_file_name(lr: float, L_link: float, alpha: float, SNR_dB: float):
     lr_str = f"{lr:}".replace('.', 'p')
     alpha_str = f"{alpha:.1f}".replace('.', 'p')
     return f"lr{lr_str}_Llink{L_link*1e-3:.0f}km_alpha{alpha_str}_{SNR_dB}dB"

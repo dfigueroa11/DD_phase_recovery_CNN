@@ -11,43 +11,46 @@ from DD_system import DD_system
 import Differential_encoder
 import data_conversion_tools as dconv_tools
 
-def cascade_filters(filt_1, filt_2):
+def cascade_filters(filt_1: torch.Tensor, filt_2: torch.Tensor):
     '''combine 2 filters by multiplication in frequency domain
 
     Arguments: 
     filt_1, filt_2:     impulse response of the filters to combine, they must be of the same length (1D tensor)
 
-    Return:
+    Returns:
     filt_out:           combination of the filters (1D tensor of length equal to the input filters)
     '''
     FILT_1 = torch.fft.fft(torch.fft.ifftshift(filt_1))
     FILT_2 = torch.fft.fft(torch.fft.ifftshift(filt_2))
     return torch.fft.fftshift(torch.fft.ifft(FILT_1*FILT_2))
 
-def convolve(signal, filter):
+def convolve(signal: torch.Tensor, filter: torch.Tensor):
     '''Apply the convolution to the signals using the conv1d torch function
     
     Arguments: 
     signal:     tensor of size (batch_size, in_channels, signal_length)
     filter:     tensor of size (out_channels, in_channels, filter_length)
 
-    Return:
+    Returns:
     out:        tensor of size (batch_size, out_channels, signal_length)   
     '''
     filter = torch.resolve_conj(torch.flip(filter, [-1]))
     return conv1d(signal, filter, padding='same')
 
-def norm_filt(N_sim, filt):
+def norm_filt(N_sim: int, filt: torch.Tensor):
     ''' Returns the filter normalized to unitary energy, taking into acount the simulation oversampling
 
     Arguments:
     N_sim:      oversampling factor used during the simulation to avoid aliasing (integer multiple of N_os)
-    filt:       filter to normalize (1D tensor)       
+    filt:       filter to normalize (1D tensor)
+
+    Returns:
+    filt:       Normalized filter
     '''
     filt = filt * torch.sqrt(N_sim / torch.sum(torch.abs(filt) ** 2))
     return filt
 
-def filt_windowing(filt, energy_criteria=99):  
+def filt_windowing(filt: torch.Tensor, energy_criteria: float=99):  
     ''' Returns the smallest window of the original filter centered around zero, than contains x% of the energy
     of the original filter, and the number of taps of such filter
 
@@ -95,7 +98,7 @@ def analyse_channel_length(N_os, N_sim, N_taps, alpha, L_link, R_sym, beta2=-2.1
     plt.stem(t, np.abs(torch.squeeze(dd_system.tx_filt))**2, linefmt=':')
     plt.show()
 
-def rcos_filt(alpha, N_taps, fs, sym_time, dtype=torch.cfloat):
+def rcos_filt(alpha: float, N_taps: int, fs: float, sym_time: float, dtype=torch.cfloat):
     ''' Returns a raised cosine filter (1D tensor of length N_taps)
 
     Arguments:
@@ -104,6 +107,9 @@ def rcos_filt(alpha, N_taps, fs, sym_time, dtype=torch.cfloat):
     fs:         sampling frequency (float)
     sym_time:   symbol time (float)
     dtype:      data type (optional, default torch.cfloat)
+
+    Returns:
+    filter:     1D tensor
     '''
     t_vec = (np.arange(N_taps)-(N_taps-1)/2)/fs
     if alpha == 0:
@@ -112,7 +118,7 @@ def rcos_filt(alpha, N_taps, fs, sym_time, dtype=torch.cfloat):
                      np.sinc(t_vec/sym_time)*(np.cos(np.pi*alpha*t_vec/sym_time))/(1-(2*alpha*t_vec/sym_time)**2))
     return torch.tensor(rcos, dtype=dtype)
 
-def chrom_disp_filt(L_link, R_sym, beta2, N_taps, N_sim, dtype=torch.cfloat):
+def chrom_disp_filt(L_link: float, R_sym: float, beta2: float, N_taps: int, N_sim: int, dtype=torch.cfloat):
     ''' Returns the impulse response of a SMF with CD (1D tensor of length N_taps)
     
     Arguments:
@@ -122,6 +128,9 @@ def chrom_disp_filt(L_link, R_sym, beta2, N_taps, N_sim, dtype=torch.cfloat):
     N_taps:     number of coefficients (integer must be odd)
     N_sim:      oversampling factor used during the simulation
     dtype:      data type (optional, default torch.cfloat)
+
+    Returns:
+    filter:     1D Tensor
     '''
     delta_f = (N_sim*R_sym)/N_taps
     f = (np.arange(N_taps) - np.floor(N_taps/2))*delta_f
@@ -129,7 +138,7 @@ def chrom_disp_filt(L_link, R_sym, beta2, N_taps, N_sim, dtype=torch.cfloat):
     h_cd = np.fft.fftshift(np.fft.ifft(np.fft.ifftshift(H_cd)))
     return torch.tensor(h_cd, dtype=dtype)
 
-def set_up_DD_system(N_os, N_sim, device, **kwargs):
+def set_up_DD_system(N_os: int, N_sim: int, device, **kwargs):
     '''Returns a DD_system with the given configuration for common constellations,
     pulse shapes, channel impulse response and receiver filter
 
@@ -153,6 +162,9 @@ def set_up_DD_system(N_os, N_sim, device, **kwargs):
     ch_imp_resp:    particular chanel impulse response to be used (1D tensor)
     rx_filt:        particular receiver filter to be used (1D tensor),
                     if not specified uses a ideal LP filter simulate sampler BW, and if N_sim=N_os is a delta function
+
+    Returns:
+    DD_system
     '''
     constellation = None
     diff_encoder = None
@@ -185,7 +197,7 @@ def set_up_DD_system(N_os, N_sim, device, **kwargs):
         rx_filt = torch.tensor([1.])
     return DD_system(N_os, N_sim, constellation , diff_encoder, pulse_shape, ch_imp_resp, rx_filt, device)
 
-def common_constellation(mod, M, dtype=torch.cfloat, sqrt_flag=False):
+def common_constellation(mod: str, M: int, dtype=torch.cfloat, sqrt_flag: bool=False):
     '''Returns the constellation specified (1D tensor of size M)
 
     Arguments:
@@ -193,6 +205,9 @@ def common_constellation(mod, M, dtype=torch.cfloat, sqrt_flag=False):
     M:          order of the modulation
     dtype:      data type (optional, default torch.cfloat)
     sqrt_flag:  whether to apply the sqrt to all symbol's magnitudes or not (boolean default: False)
+
+    Returns:
+    constellation: 1D Tensor
     '''
     if mod == "PAM":
         constellation = np.linspace(0, 1, num=M, endpoint=True)
@@ -218,8 +233,8 @@ def common_constellation(mod, M, dtype=torch.cfloat, sqrt_flag=False):
     constellation = constellation / np.sqrt(np.mean(np.abs(constellation) ** 2))
     return torch.tensor(constellation, dtype=dtype)
 
-def common_diff_encoder(mod, constellation, device):
-    '''Returns the constellation specified (1D tensor of size M)
+def common_diff_encoder(mod: str, constellation: torch.Tensor, device):
+    '''Returns the Differential_encoder
 
     Arguments:
     mod:            String with the modulation format, valid options are 'PAM', 'ASK', 'SQAM', 'QAM' or 'DDQAM'

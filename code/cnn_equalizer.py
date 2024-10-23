@@ -20,7 +20,7 @@ class CNN_equalizer(nn.Module):
     Class implementing the CNN equalizer
     '''
     
-    def __init__(self, num_ch, ker_lens, strides, activ_func, groups_list=None, activ_func_last_layer=None):
+    def __init__(self, num_ch: list, ker_lens: list, strides: list, activ_func, groups_list: list=None, activ_func_last_layer=None):
         '''
         Arguments:
         num_ch:         list with the number of input channels of each layer and number of output channel of the last layer 
@@ -29,6 +29,7 @@ class CNN_equalizer(nn.Module):
         strides:        list with the stride of each layer (list of length L)
         activ_func:     activation function applied after each layer, except the last one
         groups_list:    groups applied to each layer of the CNN (list of length L, default: list of ones)
+        activ_func_last_layer:      activation function for the last layer if None is given no activation function is used (default None)
         '''
         super().__init__()
         if groups_list is None:
@@ -42,7 +43,7 @@ class CNN_equalizer(nn.Module):
         self.activ_func = activ_func
         self.activ_func_last_layer = activ_func_last_layer
 
-    def forward(self, y):
+    def forward(self, y: torch.Tensor):
         '''
         Arguments:
         y:      input signal (Tensor of size (batch_size, in_channels, signal_in_length), in_channels as defined when creating the CNN)
