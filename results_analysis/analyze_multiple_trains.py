@@ -100,8 +100,8 @@ if __name__=="__main__":
                   "TRAIN_MSE_U_MAG_PHASE",
                   "TRAIN_MSE_U_MAG_PHASE_PHASE_FIX",
                   "TRAIN_MSE_U_SLDMAG_PHASE",
-                  "TRAIN_MSE_U_SLDMAG_PHASE_PHASE_FIX"]
-                #   "TRAIN_CE_U_SYMBOLS"]
+                  "TRAIN_MSE_U_SLDMAG_PHASE_PHASE_FIX",
+                  "TRAIN_CE_U_SYMBOLS"]
 
     mod_formats = ["ASK2","ASK4","PAM2","PAM4", "QAM4"]
     L_link_steps = np.arange(0,35,6)

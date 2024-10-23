@@ -61,8 +61,8 @@ if __name__=="__main__":
                   "TRAIN_MSE_U_MAG_PHASE",
                   "TRAIN_MSE_U_MAG_PHASE_PHASE_FIX",
                   "TRAIN_MSE_U_SLDMAG_PHASE",
-                  "TRAIN_MSE_U_SLDMAG_PHASE_PHASE_FIX"]
-                #   "TRAIN_CE_U_SYMBOLS"]
+                  "TRAIN_MSE_U_SLDMAG_PHASE_PHASE_FIX",
+                  "TRAIN_CE_U_SYMBOLS"]
     mod_formats = ["ASK2","ASK4","PAM2","PAM4","QAM4"]
     
     ###### compare modulation formats
@@ -75,7 +75,7 @@ if __name__=="__main__":
     #         compare_results([path_mod1, path_mod2], mod_format, title, save_fig=False)
     
     ###### compare loss functions
-    for mod_format in mod_formats:
+    for mod_format in mod_formats[-2:]:
         paths = [f"{path}/{loss_func}/{mod_format}/{file_name}" for loss_func  in loss_funcs]
         labels = [f"{loss_func[6:]}" for loss_func  in loss_funcs]
         title = f"Comparison of loss functions for {mod_format}"
