@@ -41,7 +41,7 @@ def get_all_SERs(u, u_hat, dd_system: DD_system, Ptx_dB):
     SERs[2] = decode_and_SER(u, u_hat, const)
     return SERs
 
-def get_MI(u, u_hat, dd_system: DD_system, Ptx_dB):
+def get_MI_HD(u, u_hat, dd_system: DD_system, Ptx_dB):
     ''' Calculates the mutual information between u and u_hat (1D arrays) after minimum distance 
     hard decoding with respect to constellation (1D tensor) with a transmit power of Ptx_dB
     '''
@@ -49,3 +49,7 @@ def get_MI(u, u_hat, dd_system: DD_system, Ptx_dB):
     u_idx, _ = min_distance_dec(u.flatten(), constellation)
     u_hat_idx, _ = min_distance_dec(u_hat.flatten(), constellation)
     return mutual_info_score(u_hat_idx, u_idx)/np.log(2)
+
+def get_MI_SD(u_idx:np.ndarray, APPs:np.ndarray):
+    p_t = np.array([np.mean(u_idx==i) for i in range(APPs.shape[-1])])
+    return np.mean(np.log2(np.take_along_axis(APPs,u_idx[:,None],-1)).squeeze() - np.log2(np.sum(APPs*p_t,axis=-1)))

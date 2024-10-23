@@ -62,7 +62,7 @@ def checkpoint_tasks(y, u, cnn_out, batch_size, progress, loss):
     SERs = perf_met.get_all_SERs(u, u_hat, dd_system, SNR_dB)
     scheduler.step(sum(SERs))
     curr_lr = scheduler.get_last_lr()
-    MI = perf_met.get_MI(u, u_hat, dd_system, SNR_dB)
+    MI = perf_met.get_MI_HD(u, u_hat, dd_system, SNR_dB)
     io_tool.print_progress(batch_size, progress, curr_lr, loss, SERs, MI)
     if save_progress:
         io_tool.save_progress(progress_file_path, batch_size, progress, curr_lr, loss, SERs, MI)
@@ -75,7 +75,7 @@ def eval_n_save_CNN():
     u_hat = cnn_out_2_u_hat(cnn_out, dd_system, Ptx_dB=SNR_dB)
     u = u.detach().cpu()
     SERs = perf_met.get_all_SERs(u, u_hat, dd_system, SNR_dB)
-    MI = perf_met.get_MI(u, u_hat, dd_system, SNR_dB)
+    MI = perf_met.get_MI_HD(u, u_hat, dd_system, SNR_dB)
 
     io_tool.print_save_summary(f"{folder_path}/results.txt", lr, L_link, alpha, SNR_dB, SERs, MI)
 
