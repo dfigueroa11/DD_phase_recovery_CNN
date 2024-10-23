@@ -257,32 +257,3 @@ def common_diff_encoder(mod: str, constellation: torch.Tensor, device):
     else:
         raise ValueError("mod should be PAM, ASK, SQAM, QAM or DDQAM")
     return Differential_encoder.Differential_encoder(constellation, diff_mapping, device)
-
-def DD_1sym_ISI(x, h0=1, h1=1/2, device='cpu'):
-    '''Apply ideal DD for a channel with one symbol ISI, with Tx_filter = [h1, h0, h1]
-    
-    Arguments:
-    x:      input signal (tensor of size (batch_size, 1, N_sym))
-    h0:     center filter coefficient, default: 1
-    h1:     side filter coefficients, default: 1/2
-    device: the device to use (cpu or cuda)
-
-    Returns:
-    y:      signal (tensor of size ((batch_size, 1, 2*N_sym))
-    '''
-    y_1sym_ISI = torch.zeros(x.size(dim=0), x.size(dim=1), 2*x.size(dim=2), device=device)
-    y_1sym_ISI[:,:,1::2] = torch.square(torch.abs(h0*x))
-    y_1sym_ISI[:,:,0::2] = torch.square(torch.abs(h1*x+h1*torch.roll(x, 1, dims=-1)))
-    return y_1sym_ISI
-
-def abs_phase_diff(x, dim=-1):
-    '''Computes the phase difference between adjacent symbols
-    
-    Arguments:
-    x:      input signal (tensor of size (batch_size, 1, N_sym))
-    dim:    dimension to do the phase difference (default -1)
-
-    Returns:
-    signal (tensor of size ((batch_size, 1, N_sym))
-    '''
-    return torch.abs(torch.remainder(torch.abs(torch.diff(torch.angle(x))+torch.pi),2*torch.pi)-torch.pi)
