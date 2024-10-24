@@ -84,10 +84,21 @@ if __name__=="__main__":
     file_name = "results.txt"
     save_fig = False
     pdf = PdfPages(f"cnn_results_all.pdf") if save_fig else None
-    for loss_func in loss_funcs:
-        for mod_format in mod_formats:
-            folder = f"{loss_func}/{mod_format}"
-            path_file = f"{path}/{folder}/{file_name}"
-            make_all_plots(path_file, SNR_plot=True, Llink_plot=False, pdf=pdf)
-        if save_fig:
-            pdf.close()
+    # for loss_func in loss_funcs:
+    #     for mod_format in mod_formats:
+    #         folder = f"{loss_func}/{mod_format}"
+    #         path_file = f"{path}/{folder}/{file_name}"
+    #         make_all_plots(path_file, SNR_plot=True, Llink_plot=False, pdf=pdf)
+    #     if save_fig:
+    #         pdf.close()
+
+    folders = ["TRAIN_CE_U_SYMBOLS/ASK2",
+               "TRAIN_CE_U_SYMBOLS/ASK4",
+               "TRAIN_MSE_U_MAG_PHASE/PAM2",
+               "TRAIN_MSE_U_MAG_PHASE/PAM4",
+               "TRAIN_MSE_U_SYMBOLS/QAM4"]
+    for folder in folders:
+        path_file = f"{path}/{folder}/{file_name}"
+        make_all_plots(path_file, SNR_plot=True, Llink_plot=False, pdf=pdf)
+    if save_fig:
+        pdf.close()

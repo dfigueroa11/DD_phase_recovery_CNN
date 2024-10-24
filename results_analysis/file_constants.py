@@ -18,3 +18,9 @@ mean_MI_column_ppr = 14
 max_MI_column_ppr = 15
 conv_rate_column_ppr = 16
 
+L_link_Plabst_column_ppr = 0
+SNR_Plabst_column_ppr = 1
+MI_Plabst_column_ppr = 2
+SDD_MI_Plabst_column_ppr = 3
+SER_Plabst_column_ppr = 4
+SDD_SER_Plabst_column_ppr = 5
