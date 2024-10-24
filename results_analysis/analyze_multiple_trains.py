@@ -75,7 +75,11 @@ def save_best_images(data, idx, source_path, result_path, folder):
 
 
 def analyze_ser_txt(num_folders, path, folder, result_path):
-    all_data = read_all_data(num_folders, path, folder, "results.txt")
+    try:
+        all_data = read_all_data(num_folders, path, folder, "results.txt")
+    except FileNotFoundError:
+        print(f"\tnot found")
+        return -1
     all_data = find_replace_non_convergence(all_data, threshold=1e-3)
     data, idx = pick_max_min_mean_data(all_data)
     conv_rate = find_convergence_rate(all_data)
@@ -93,7 +97,7 @@ def analyze_progress_txt(L_link_steps, SNR_dB_steps, num_folders, path, path_pos
 
 
 if __name__=="__main__":
-    path = "/Users/diegofigueroa/Desktop/results"
+    path = "/Users/diegofigueroa/Desktop/results_BIG_CNN"
     path_post_processing = f"{path}_post_processing"
 
     loss_funcs = ["TRAIN_MSE_U_SYMBOLS",
@@ -106,7 +110,7 @@ if __name__=="__main__":
     mod_formats = ["ASK2","ASK4","PAM2","PAM4", "QAM4"]
     L_link_steps = np.arange(0,35,6)
     SNR_dB_steps = np.arange(-5, 12, 2)
-    num_folders = 3
+    num_folders = 2
     for loss_func in loss_funcs:
         for mod_format in mod_formats:
             print(f"Processing: {loss_func}/{mod_format}")
