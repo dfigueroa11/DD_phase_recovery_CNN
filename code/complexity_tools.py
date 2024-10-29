@@ -17,4 +17,4 @@ def calc_multi_layer_CNN_complexity(conv_layers: nn.ModuleList, sig_len: int=2**
     for cl in conv_layers:
         sig_len = (sig_len + 2*cl.padding[0] - cl.dilation[0]*(cl.kernel_size[0]-1) - 1)//cl.stride[0] + 1
         num_m += cl.out_channels * (cl.in_channels/cl.groups) * cl.kernel_size[0] * sig_len
-    return num_m/(sig_len*cl.out_channels)
+    return np.ceil(num_m/(sig_len*cl.out_channels))
