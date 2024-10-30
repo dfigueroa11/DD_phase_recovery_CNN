@@ -19,15 +19,20 @@ def calc_multi_layer_CNN_complexity(conv_layers: nn.ModuleList, sig_len: int=2**
         num_m += cl.out_channels * (cl.in_channels/cl.groups) * cl.kernel_size[0] * sig_len
     return np.ceil(num_m/(sig_len*cl.out_channels))
 
-def design_CNN_structures(complexity: int, complexity_profile: np.ndarray, CNN_ch_in: int, CNN_ch_out: int, strides: np.ndarray, groups: np.ndarray):
-    structures = [1]
+def design_CNN_structures(complexity: int, complexity_profile: np.ndarray, CNN_ch_in: int, CNN_ch_out: int, strides: np.ndarray, groups: np.ndarray,
+                          num_new_structures_per_layer: int=4):
     # assert np.isclose(sum(complexity_profile),1), "complexity_profile must add up to 1"
     assert complexity_profile.size == strides.size and strides.size == groups.size, "complexity_profile, strides and groups must have the same size"
     layers_complexity_budget = complexity*complexity_profile
+    first_structure = -np.ones((5,strides.size))
+    first_structure[0,0] = CNN_ch_in
+    first_structure[3,:] = strides
+    first_structure[4,:] = groups
+    structures = [first_structure,]
     for layer_idx, l_comp in enumerate(layers_complexity_budget):
         new_structures = []
         for structure in structures:
-            new_structures += design_conv_layer(l_comp,structure,layer_idx)
+            new_structures += design_conv_layer(l_comp, structure, layer_idx, num_new_structures_per_layer, CNN_ch_out)
         structures = new_structures
     return structures
 
@@ -37,8 +42,8 @@ def design_conv_layer(complexity: float, structure: np.ndarray, layer_idx: int, 
     groups_current = structure[4, layer_idx]
     # if we are in the last layer:
     if layer_idx+1 == strides.size:
-        structure[1,layer_idx] = round_ch_out(CNN_ch_out, groups_current)
-        structure[2,layer_idx] = complexity*groups_current/(layer_ch_in*np.prod(strides[layer_idx+1:]))
+        structure[1,layer_idx] = round_ch_out(CNN_ch_out, int(groups_current))
+        structure[2,layer_idx] = round_kernel_size(complexity*groups_current/(layer_ch_in*np.prod(strides[layer_idx+1:])))
         return [structure,]
     groups_next = structure[4, layer_idx+1]
     prod_layer_ch_out_ker_sz = complexity*groups_current*CNN_ch_out/(layer_ch_in*np.prod(strides[layer_idx+1:]))
@@ -47,9 +52,9 @@ def design_conv_layer(complexity: float, structure: np.ndarray, layer_idx: int, 
     structures = []
     for layer_ch_out, k_size in zip(layer_ch_out_options, k_size_options):
         new_structure = structure.copy()
-        new_structure[1,layer_idx] = round_ch_out(layer_ch_out, groups_current, groups_next)
+        new_structure[1,layer_idx] = round_ch_out(layer_ch_out, int(groups_current), int(groups_next))
         new_structure[2,layer_idx] = round_kernel_size(k_size)
-        new_structure[0,layer_idx+1] = round_ch_out(layer_ch_out, groups_current, groups_next)       # input of the next layer is output of the current one
+        new_structure[0,layer_idx+1] = round_ch_out(layer_ch_out, int(groups_current), int(groups_next))       # input of the next layer is output of the current one
         structures.append(new_structure)
     return structures
 
@@ -68,10 +73,8 @@ def round_kernel_size(kernel_size: float):
     return int(np.ceil(kernel_size) + np.mod(np.ceil(kernel_size)+1,2))
 
 if __name__=="__main__":
-    xd = design_conv_layer(500, np.array([[1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1],[1,1,1,1],[1,3,5,1]]),0,5,1)
-    xd = design_conv_layer(500,xd[1],1,5,1)
-    xd = design_conv_layer(500,xd[1],2,5,1)
-    # xd = design_conv_layer(500,xd[1],3,5,1)
-    
+    xd = design_CNN_structures(1000, np.array([1/3]*3), 1, 1, np.ones(3, int), np.ones(3, int), 3)
+    print(len(xd))
     for xxd in xd:
         print(xxd)
+    
