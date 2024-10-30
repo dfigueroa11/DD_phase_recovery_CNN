@@ -69,6 +69,22 @@ def init_summary_file(path: str):
     with open(path, 'a') as file:
         file.write("lr,L_link_km,alpha,SNR_dB,mag_ER,phase_ER,SER,MI\n")
 
+def write_structure_in_summary_file(path: str, structure: np.ndarray):
+    ''' Write the structure of the CNN
+
+    Arguments:
+    path:           path of the file to save the results
+    structure:      structure of the CNN (shape (5,CNN_N_layers),
+                    1st row: in_channels, 2nd row: out_channels, 3rd row: kernel_size, 4th row: stride, 5th row: groups)
+    '''
+    with open(path, 'a') as file:
+        file.write(f"# input channels: {structure[0]}\n")
+        file.write(f"# output channels: {structure[1]}\n")
+        file.write(f"# kernel size: {structure[2]}\n")
+        file.write(f"# strides: {structure[3]}\n")
+        file.write(f"# groups: {structure[4]}\n")
+        
+
 def write_complexity_in_summary_file(path: str, complexity: float):
     ''' writes to the file the complexity
     '''
