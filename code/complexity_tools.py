@@ -31,11 +31,11 @@ def design_CNN_structures(complexity: int, complexity_profile: np.ndarray, CNN_c
         structures = new_structures
     return structures
 
-def design_conv_layer(complexity: float, structure: np.ndarray, layer_idx: int, num_new_structures: int, ch_out: int=None):
-    ch_in = structure[0,layer_idx]
-    stride = structure[3,layer_idx]
+def design_conv_layer(complexity: float, structure: np.ndarray, layer_idx: int, num_new_structures: int, CNN_ch_out: int):
+    layer_ch_in = structure[0,layer_idx]
+    strides = structure[3,:]
     groups = structure[4, layer_idx]
-    prod_ch_out_ker_sz = complexity*groups*stride/ch_in
+    prod_ch_out_ker_sz = complexity*groups*CNN_ch_out/(layer_ch_in*np.prod(strides[layer_idx+1:]))
     ch_out_options = np.logspace((1/(num_new_structures+1)), np.log10(prod_ch_out_ker_sz), num_new_structures, endpoint=False)
     k_size_options = prod_ch_out_ker_sz/ch_out_options
     structures = []
@@ -43,7 +43,7 @@ def design_conv_layer(complexity: float, structure: np.ndarray, layer_idx: int, 
         new_structure = structure.copy()
         new_structure[1,layer_idx] = ch_out
         new_structure[2,layer_idx] = k_size
-        new_structure[0,layer_idx+1] = ch_out
+        new_structure[0,layer_idx+1] = ch_out       # input of the next layer is output of the current one
         structures.append(new_structure)
     return structures
 
