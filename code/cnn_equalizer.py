@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import data_conversion_tools as dconv_tools
+from complexity_tools import calc_multi_layer_CNN_complexity
 
 TRAIN_MSE_U_SYMBOLS = 0
 TRAIN_MSE_U_MAG_PHASE = 1
@@ -40,6 +41,7 @@ class CNN_equalizer(nn.Module):
             self.conv_layers.append(nn.Conv1d(ch_in, ch_out, ker_len, stride, (ker_len-1)//2, groups=groups))
         self.activ_func = activ_func
         self.activ_func_last_layer = activ_func_last_layer
+        self.complexity = calc_multi_layer_CNN_complexity(self.conv_layers)
 
     def forward(self, y: torch.Tensor):
         '''

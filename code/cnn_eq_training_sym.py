@@ -10,7 +10,6 @@ import in_out_tools as io_tool
 from DD_system import DD_system
 import cnn_equalizer
 from loss_functions import loss_funcs
-import complexity_tools
 
 def initialize_dd_system():
     return hlp.set_up_DD_system(N_os=N_os, N_sim=N_sim, device=device,
@@ -139,4 +138,4 @@ for lr in lr_steps:
                     io_tool.init_progress_file(progress_file_path)
                 train_CNN(loss_func)
                 eval_n_save_CNN()
-io_tool.write_complexity_in_summary_file(f"{folder_path}/results.txt", complexity_tools.calc_multi_layer_CNN_complexity(cnn_eq.conv_layers))
+io_tool.write_complexity_in_summary_file(f"{folder_path}/results.txt", cnn_eq.complexity)
