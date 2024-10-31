@@ -94,10 +94,10 @@ def write_complexities_summary(path: str, complexities: np.ndarray):
     ''' writes to the file the complexity
     '''
     with open(path, 'a') as file:
-        print(f"min complexity: \t{complexities.min():.0f} at {complexities.argmin()}")
-        print(f"max complexity: \t{complexities.max():.0f} at {complexities.argmax()}")
-        print(f"mean complexity:\t{complexities.mean():.2f}")
-        print(f"std complexity: \t{complexities.std():.2f}")
+        file.write(f"# min complexity: \t{complexities.min():.0f} at {complexities.argmin()}\n")
+        file.write(f"# max complexity: \t{complexities.max():.0f} at {complexities.argmax()}\n")
+        file.write(f"# mean complexity:\t{complexities.mean():.2f}\n")
+        file.write(f"# std complexity: \t{complexities.std():.2f}\n")
 
 def print_save_summary(path: str, lr: float, L_link: float, alpha: float, SNR_dB: float, SERs: list, MI: float):
     ''' Print and saves the summary of the training process
