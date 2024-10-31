@@ -77,12 +77,11 @@ def design_conv_layer(complexity: float, structure: np.ndarray, layer_idx: int, 
     groups_next = structure[4, layer_idx+1]
     prod_layer_ch_out_ker_sz = complexity*groups_current*CNN_ch_out/(layer_ch_in*np.prod(strides[layer_idx+1:]))
     layer_ch_out_options = np.logspace((1/(num_new_structures+1)), np.log10(prod_layer_ch_out_ker_sz), num_new_structures, endpoint=False)
-    k_size_options = prod_layer_ch_out_ker_sz/layer_ch_out_options
     structures = []
-    for layer_ch_out, k_size in zip(layer_ch_out_options, k_size_options):
+    for layer_ch_out in layer_ch_out_options:
         new_structure = structure.copy()
         new_structure[1,layer_idx] = round_ch_out(layer_ch_out, int(groups_current), int(groups_next))
-        new_structure[2,layer_idx] = round_kernel_size(k_size)
+        new_structure[2,layer_idx] = round_kernel_size(prod_layer_ch_out_ker_sz/round_ch_out(layer_ch_out, int(groups_current), int(groups_next)))
         # input of the next layer is output of the current one
         new_structure[0,layer_idx+1] = round_ch_out(layer_ch_out, int(groups_current), int(groups_next))
         structures.append(new_structure.astype(int))
