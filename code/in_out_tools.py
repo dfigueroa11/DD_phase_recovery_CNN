@@ -83,14 +83,22 @@ def write_structure_in_summary_file(path: str, structure: np.ndarray):
         file.write(f"# kernel size: {structure[2]}\n")
         file.write(f"# strides: {structure[3]}\n")
         file.write(f"# groups: {structure[4]}\n")
-        
 
 def write_complexity_in_summary_file(path: str, complexity: float):
     ''' writes to the file the complexity
     '''
     with open(path, 'a') as file:
         file.write(f"# complexity per symbol: {complexity:.0f}\n")
-        
+
+def write_complexities_summary(path: str, complexities: np.ndarray):
+    ''' writes to the file the complexity
+    '''
+    with open(path, 'a') as file:
+        print(f"min complexity: \t{complexities.min():.0f} at {complexities.argmin()}")
+        print(f"max complexity: \t{complexities.max():.0f} at {complexities.argmax()}")
+        print(f"mean complexity:\t{complexities.mean():.2f}")
+        print(f"std complexity: \t{complexities.std():.2f}")
+
 def print_save_summary(path: str, lr: float, L_link: float, alpha: float, SNR_dB: float, SERs: list, MI: float):
     ''' Print and saves the summary of the training process
 
@@ -257,7 +265,7 @@ def process_args():
         type=str,
         help="modulation format",
         choices=["ASK", "PAM", "DDQAM", "QAM"],
-        default="ASK")
+        default="PAM")
     parser.add_argument(
         "--order",
         "-o",
@@ -270,7 +278,7 @@ def process_args():
         type=int,
         help=f"int to select the loss function: {TRAIN_TYPES}",
         choices=TRAIN_TYPES.keys(),
-        default=5)
+        default=0)
     return parser.parse_args()
  
 def make_file_name(lr: float, L_link: float, alpha: float, SNR_dB: float):
