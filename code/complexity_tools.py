@@ -2,7 +2,7 @@ import numpy as np
 import torch.nn as nn
 
 def calc_multi_layer_CNN_complexity(conv_layers: nn.ModuleList, sig_len: int=2**20):
-    ''' Calculates the complexity of a CNN measured in number of multiplications per output per output channel
+    ''' Calculates the complexity of a CNN measured in number of multiplications per output symbol
 
     Arguments:
     conv_layers:    list of convolutional layers applied in the given order in the CNN
@@ -17,7 +17,7 @@ def calc_multi_layer_CNN_complexity(conv_layers: nn.ModuleList, sig_len: int=2**
     for cl in conv_layers:
         sig_len = (sig_len + 2*cl.padding[0] - cl.dilation[0]*(cl.kernel_size[0]-1) - 1)//cl.stride[0] + 1
         num_m += cl.out_channels * (cl.in_channels/cl.groups) * cl.kernel_size[0] * sig_len
-    return np.ceil(num_m/(sig_len*cl.out_channels))
+    return np.ceil(num_m/(sig_len))
 
 def design_CNN_structures(complexity: int, complexity_profile: np.ndarray, CNN_ch_in: int, CNN_ch_out: int, strides: np.ndarray, groups: np.ndarray,
                           n_str_layer: int=4):
@@ -72,10 +72,10 @@ def design_conv_layer(complexity: float, structure: np.ndarray, layer_idx: int, 
     # if we are in the last layer:
     if layer_idx+1 == strides.size:
         structure[1,layer_idx] = round_ch_out(CNN_ch_out, int(groups_current))
-        structure[2,layer_idx] = round_kernel_size(complexity*groups_current/(layer_ch_in*np.prod(strides[layer_idx+1:])))
+        structure[2,layer_idx] = round_kernel_size(complexity*groups_current/(CNN_ch_out*layer_ch_in*np.prod(strides[layer_idx+1:])))
         return [structure.astype(int),]
     groups_next = structure[4, layer_idx+1]
-    prod_layer_ch_out_ker_sz = complexity*groups_current*CNN_ch_out/(layer_ch_in*np.prod(strides[layer_idx+1:]))
+    prod_layer_ch_out_ker_sz = complexity*groups_current/(layer_ch_in*np.prod(strides[layer_idx+1:]))
     layer_ch_out_options = np.logspace((1/(num_new_structures+1)), np.log10(prod_layer_ch_out_ker_sz), num_new_structures, endpoint=False)
     structures = []
     for layer_ch_out in layer_ch_out_options:
