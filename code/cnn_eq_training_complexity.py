@@ -2,7 +2,7 @@ import torch
 import torch.optim as optim
 from torch.nn import MSELoss, Softmax
 import matplotlib.pyplot as plt
-
+from time import sleep
 import numpy as np
 
 import help_functions as hlp
@@ -64,7 +64,7 @@ def eval_n_save_CNN():
     u = u.detach().cpu()
     SERs = perf_met.get_all_SERs(u, u_hat, dd_system, SNR_dB)
     MI = perf_met.get_MI_HD(u, u_hat, dd_system, SNR_dB)
-    with open(f"{folder_path}/results.txt", 'a') as file:
+    with open(f"{folder_path}/results_L={n_layers}_C={complexity}.txt", 'a') as file:
         file.write(f"{L_link*1e-3:.0f},{SERs[0]:.10e},{SERs[1]:.10e},{SERs[2]:.10e},{MI:.10e},{cnn_eq.complexity:.0f}\n")
 
 
@@ -88,21 +88,21 @@ SNR_dB = 9
 train_type = list(cnn_equalizer.TRAIN_TYPES.keys())[args.loss_func]
 train_type_name = cnn_equalizer.TRAIN_TYPES[train_type]
 ### Training hyperparameter
-batches_per_epoch = 3
-batch_size_per_epoch = [2,]
+batches_per_epoch = 300
+batch_size_per_epoch = [100, 300]
 N_sym = 1000
 lr = 0.004
-checkpoint_per_epoch = 1
+checkpoint_per_epoch = 100
 
 ### CNN definition
 activ_func = torch.nn.ELU()
 CNN_ch_in = 1
 CNN_ch_out = 1
 ###################################### change
-n_layers = 4
+n_layers = 2
 complexity = 1000
-complexity_profiles = np.array([[2,2,2,2],[1,2,2,1]])
-n_str_layer = 2
+complexity_profiles = np.array([[1,1],[1,2],[2,1],[1,3],[3,1]])
+n_str_layer = 4
 ##########################################
 loss_func = loss_funcs[train_type]
 cnn_out_2_u_hat = cnn_equalizer.cnn_out_2_u_hat_funcs[train_type]
@@ -118,6 +118,11 @@ if train_type == cnn_equalizer.TRAIN_CE_U_SYMBOLS:
     groups[-1] = 1
     CNN_ch_out = M
 
+sys_to_simulate = len(complexity_profiles)*n_layers*n_str_layer**(n_layers -1)*len(L_link_steps)
+print(f"you ara about to simulate {sys_to_simulate} times the system")
+sleep(2)
+
+
 structures = []
 for complexity_profile in complexity_profiles:
     complexity_profile = complexity_profile/complexity_profile.sum()
@@ -126,8 +131,8 @@ for complexity_profile in complexity_profiles:
         structures.extend(design_CNN_structures(complexity, complexity_profile, CNN_ch_in, CNN_ch_out, strides, np.array(groups), n_str_layer))
 
 folder_path = io_tool.create_folder(f"results/{train_type_name}/{mod_format}{M:}",0)
-np.save(f"{folder_path}/structures.npy",np.array(structures))
-with open(f"{folder_path}/results.txt", 'a') as file:
+np.save(f"{folder_path}/structures_L={n_layers}_C={complexity}.npy",np.array(structures))
+with open(f"{folder_path}/results_L={n_layers}_C={complexity}.txt", 'a') as file:
         file.write("L_link_km,mag_ER,phase_ER,SER,MI,complexity\n")
 
 for L_link in L_link_steps:
@@ -141,7 +146,7 @@ for L_link in L_link_steps:
         CNN_complexities.append(cnn_eq.complexity)
 
 CNN_complexities = np.array(CNN_complexities)
-io_tool.write_complexities_summary(f"{folder_path}/results.txt", CNN_complexities)
+io_tool.write_complexities_summary(f"{folder_path}/results_L={n_layers}_C={complexity}.txt", CNN_complexities)
 print(f"min complexity: \t{CNN_complexities.min():.0f} at {CNN_complexities.argmin()}")
 print(f"max complexity: \t{CNN_complexities.max():.0f} at {CNN_complexities.argmax()}")
 print(f"mean complexity:\t{CNN_complexities.mean():.2f}")
