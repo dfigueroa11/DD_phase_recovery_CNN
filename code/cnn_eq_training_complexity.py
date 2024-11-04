@@ -99,9 +99,11 @@ activ_func = torch.nn.ELU()
 CNN_ch_in = 1
 CNN_ch_out = 1
 ###################################### change
-n_layers = 2
+n_layers = 3
 complexity = 1000
-complexity_profiles = np.array([[1,1],[1,2],[2,1],[1,3],[3,1]])
+# complexity_profiles = np.array([[1,1],[1,2],[2,1],[1,3],[3,1]])   # for 2 layers
+complexity_profiles = np.array([[1,1,1],[1,2,3],[3,2,1],[1,2,1],[2,1,2]])   # for 3 layers
+# complexity_profiles = np.array([[1,1,1,1],[1,2,3,3],[3,3,2,1],[1,2,2,1],[2,1,1,2]])   # for 4 layers
 n_str_layer = 4
 ##########################################
 loss_func = loss_funcs[train_type]
