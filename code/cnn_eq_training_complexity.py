@@ -99,10 +99,10 @@ activ_func = torch.nn.ELU()
 CNN_ch_in = 1
 CNN_ch_out = 1
 ###################################### change
-n_layers = 3
+n_layers = 2
 complexity = 1000
-# complexity_profiles = np.array([[1,1],[1,2],[2,1],[1,3],[3,1]])   # for 2 layers
-complexity_profiles = np.array([[1,1,1],[1,2,3],[3,2,1],[1,2,1],[2,1,2]])   # for 3 layers
+complexity_profiles = np.array([[1,1],[1,2],[2,1],[1,3],[3,1]])   # for 2 layers
+# complexity_profiles = np.array([[1,1,1],[1,2,3],[3,2,1],[1,2,1],[2,1,2]])   # for 3 layers
 # complexity_profiles = np.array([[1,1,1,1],[1,2,3,3],[3,3,2,1],[1,2,2,1],[2,1,1,2]])   # for 4 layers
 n_str_layer = 4
 ##########################################
@@ -142,7 +142,7 @@ for L_link in L_link_steps:
     for i, structure in enumerate(structures):
         dd_system = initialize_dd_system()
         cnn_eq, optimizer, scheduler = initialize_CNN_optimizer(lr, np.append(structure[0],structure[1,-1]), structure[2], structure[3], structure[4])
-        print(f'training model L_link={L_link*1e-3:.0f}km, SNR={SNR_dB} dB, for {mod_format}-{M}, train type: {train_type_name}, complexity: {cnn_eq.complexity:.0f}')
+        print(f'training model L_link={L_link*1e-3:.0f}km, SNR={SNR_dB} dB, for {mod_format}-{M}, train type: {train_type_name}, complexity: {cnn_eq.complexity:.0f}, structure: {i+1}/{len(structures)}')
         train_CNN(loss_func)
         eval_n_save_CNN()
         CNN_complexities.append(cnn_eq.complexity)
