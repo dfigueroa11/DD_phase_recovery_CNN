@@ -19,7 +19,7 @@ def calc_multi_layer_CNN_complexity(conv_layers: nn.ModuleList, sig_len: int=2**
         num_m += cl.out_channels * (cl.in_channels/cl.groups) * cl.kernel_size[0] * sig_len
     return np.ceil(num_m/(sig_len))
 
-def design_CNN_structures(complexity: int, complexity_profile: np.ndarray, CNN_ch_in: int, CNN_ch_out: int, strides: np.ndarray, groups: np.ndarray,
+def design_CNN_structures_fix_comp(complexity: int, complexity_profile: np.ndarray, CNN_ch_in: int, CNN_ch_out: int, strides: np.ndarray, groups: np.ndarray,
                           n_str_layer: int=4):
     ''' Design many structures of CNN with a given complexity
 
@@ -47,11 +47,11 @@ def design_CNN_structures(complexity: int, complexity_profile: np.ndarray, CNN_c
     for layer_idx, l_comp in enumerate(layers_complexity_budget):
         new_structures = []
         for structure in structures:
-            new_structures += design_conv_layer(l_comp, structure, layer_idx, n_str_layer, CNN_ch_out)
+            new_structures += design_conv_layer_fix_comp(l_comp, structure, layer_idx, n_str_layer, CNN_ch_out)
         structures = new_structures
     return structures
 
-def design_conv_layer(complexity: float, structure: np.ndarray, layer_idx: int, num_new_structures: int, CNN_ch_out: int):
+def design_conv_layer_fix_comp(complexity: float, structure: np.ndarray, layer_idx: int, num_new_structures: int, CNN_ch_out: int):
     '''Starting from a given structure of the first (i-1) conv layers, design 'num' new structures for the i-th conv layer,
     while having approximately the given complexity for the designed layer, and meeting the requirements of stride and groups.
 
