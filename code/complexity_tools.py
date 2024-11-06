@@ -72,7 +72,7 @@ def design_conv_layer_fix_comp(complexity: float, structure: np.ndarray, layer_i
     # if we are in the last layer:
     if layer_idx+1 == strides.size:
         structure[1,layer_idx] = round_ch_out(CNN_ch_out, int(groups_current))
-        structure[2,layer_idx] = round_kernel_size(complexity*groups_current/CNN_ch_out*layer_ch_in)
+        structure[2,layer_idx] = round_kernel_size(complexity*groups_current/(CNN_ch_out*layer_ch_in))
         return [structure.astype(int),]
     groups_next = structure[4, layer_idx+1]
     prod_layer_ch_out_ker_sz = complexity*groups_current/(layer_ch_in*np.prod(strides[layer_idx+1:]))
@@ -106,7 +106,7 @@ def design_CNN_structures_fix_geom(complexities: np.ndarray, complexity_profile:
             new_structure[2,i] = round_kernel_size(new_structure[1,i]/ch_out_ker_sz_ratio)
             new_structure[0,i+1] = new_structure[1,i]
         new_structure[1,-1] = round_ch_out(CNN_ch_out, int(groups[-1]))
-        new_structure[2,-1] = round_kernel_size(layers_complexity[-1]*groups[-1]/CNN_ch_out*new_structure[0,-1])
+        new_structure[2,-1] = round_kernel_size(layers_complexity[-1]*groups[-1]/(CNN_ch_out*new_structure[0,-1]))
         structures.append(new_structure)
     return structures
 
