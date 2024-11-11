@@ -65,8 +65,8 @@ def eval_n_save_CNN():
     u = u.detach().cpu()
     SERs = perf_met.get_all_SERs(u, u_hat, dd_system, SNR_dB)
     MI = perf_met.get_MI_HD(u, u_hat, dd_system, SNR_dB)
-    with open(f"{folder_path}/results_L={n_layers}.txt", 'a') as file:
-        file.write(f"{L_link*1e-3:.0f},{SERs[0]:.10e},{SERs[1]:.10e},{SERs[2]:.10e},{MI:.10e},{cnn_eq.complexity:.0f}\n")
+    with open(f"{folder_path}/results_L={n_layer}.txt", 'a') as file:
+        file.write(f"{L_link*1e-3:.0f},{SERs[0]:.10e},{SERs[1]:.10e},{SERs[2]:.10e},{MI:.10e},{cnn_eq.complexity:.0f},{n}\n")
 
 ##############
 def load_structure_geometry(path, n_layer, mod_format, L_link, n):
@@ -107,22 +107,29 @@ activ_func = torch.nn.ELU()
 loss_func = loss_funcs[train_type]
 cnn_out_2_u_hat = cnn_equalizer.cnn_out_2_u_hat_funcs[train_type]
 n_layers = [2,3]
-num_best_structures = 1
-complexities = np.arange(50,2000,50)
+num_best_structures = 3
+complexities = np.arange(20,101,20)
+complexities = np.append(complexities, np.arange(150,501,50))
+complexities = np.append(complexities, np.arange(600,1001,100))
+complexities = np.append(complexities, np.arange(1200,2001,200))
+complexities = np.append(complexities, np.arange(2500,5001,500))
 
+print(f"you are about to simulate {len(n_layers)*len(L_link_steps)*num_best_structures*len(complexities)} CNNs")
 
 folder_path = io_tool.create_folder(f"results/{train_type_name}/{mod_format}{M:}",0)
-with open(f"{folder_path}/results_L={n_layers}.txt", 'a') as file:
-        file.write("L_link_km,mag_ER,phase_ER,SER,MI,complexity\n")
-
 for j, n_layer in enumerate(n_layers):
+    with open(f"{folder_path}/results_L={n_layer}.txt", 'a') as file:
+            file.write("L_link_km,mag_ER,phase_ER,SER,MI,complexity,structure_geom\n")
     for k, L_link in enumerate(L_link_steps):
         for n in range(num_best_structures):
-            structure_geometry = load_structure_geometry(f"/Users/diegofigueroa/Desktop/CNN_geometries", n_layer, mod_format_str, int(L_link*1e-3), n)
+            structure_geometry = load_structure_geometry(f"CNN_geometries", n_layer, mod_format_str, int(L_link*1e-3), n)
             structures = design_CNN_structures_fix_geom(complexities, **structure_geometry)
             for structure in structures:
                 dd_system = initialize_dd_system()
                 cnn_eq, optimizer, scheduler = initialize_CNN_optimizer(lr, np.append(structure[0],structure[1,-1]), structure[2], structure[3], structure[4])
-                print(f'training model L_link={L_link*1e-3:.0f}km, SNR={SNR_dB} dB, for {mod_format}-{M}, train type: {train_type_name}, complexity: {cnn_eq.complexity:.0f}')
-                # train_CNN(loss_func)
+                print(f'training model L_link={L_link*1e-3:.0f}km, SNR={SNR_dB} dB, for {mod_format}-{M}, train type: {train_type_name}, {n_layer} layers, complexity: {cnn_eq.complexity:.0f}')
+                train_CNN(loss_func)
                 eval_n_save_CNN()
+            with open(f"{folder_path}/results_L={n_layer}.txt", 'a') as file:
+                file.write(f"# {structure_geometry}\n")
+                
