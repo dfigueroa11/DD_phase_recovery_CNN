@@ -96,7 +96,7 @@ def design_CNN_structures_fix_geom(complexities: np.ndarray, complexity_profile:
     structures = []
     for complexity in complexities:
         layers_complexity = complexity*complexity_profile
-        new_structure = -np.ones((5,strides.size))
+        new_structure = -np.ones((5,strides.size), dtype=int)
         new_structure[0,0] = CNN_ch_in
         new_structure[3,:] = strides
         new_structure[4,:] = groups
@@ -111,15 +111,26 @@ def design_CNN_structures_fix_geom(complexities: np.ndarray, complexity_profile:
     return structures
 
 def round_ch_out(ch_out: float, groups_pre: int=1, groups_post: int=1):
-    ''' Returns the smallest integer divisible by groups_current_pre and groups_current_post bigger than ch_out
+    ''' Returns the nearest integer divisible by groups_current_pre and groups_current_post to ch_out
     '''
+    ch_out = np.round(ch_out)
+    if ch_out == 0:
+        ch_out = 1
     divisible_by = np.lcm(groups_pre, groups_post)
-    remainder = np.mod(np.ceil(ch_out), divisible_by)
+    remainder = np.mod(ch_out, divisible_by)
     if remainder == 0:
-        return int(np.ceil(ch_out))
-    return int(np.ceil(ch_out)+divisible_by-remainder)
+        return int(ch_out)
+    if remainder < divisible_by/2:
+        return int(ch_out+divisible_by-remainder)
+    if int(ch_out-remainder) < 1:
+        return int(ch_out+divisible_by-remainder)
+    return int(ch_out-remainder)
 
 def round_kernel_size(kernel_size: float):
-    ''' Returns the smallest odd number bigger than kernel_size
+    ''' Returns the nearest odd number to the kernel_size
     '''
-    return int(np.ceil(kernel_size) + np.mod(np.ceil(kernel_size)+1,2))
+    if np.mod(np.round(kernel_size),2) == 1:
+        return int(np.round(kernel_size))
+    if np.round(kernel_size) < kernel_size:
+        return int(np.round(kernel_size) + 1)
+    return int(np.round(kernel_size) - 1)
