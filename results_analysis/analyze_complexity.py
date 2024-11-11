@@ -5,6 +5,8 @@ from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.gridspec as gridspec
 from matplotlib.lines import Line2D  # Import for custom legend entries
 from functools import reduce
+import pickle
+
 import file_constants as fc
 
 def read_data(path_file):
@@ -115,11 +117,19 @@ def gen_structure_geometry(structures):
     ch_out_ker_sz_ratios = np.mean(structures[:,1,:-1]/structures[:,2,:-1], axis=0)
     complexity_profile = structures[:,1,:]*structures[:,2,:]*structures[:,0,:]*np.prod(strides)/(np.cumprod(strides)*groups)
     complexity_profile = complexity_profile/np.sum(complexity_profile, axis=-1, keepdims=True)
-    complexity_profile.mean(axis=0)/complexity_profile.mean(axis=0).sum()
+    complexity_profile = complexity_profile.mean(axis=0)/complexity_profile.mean(axis=0).sum()
     return complexity_profile, ch_out_ker_sz_ratios, CNN_ch_in, CNN_ch_out, strides, groups
 
-def save_structure_geometry(structure_geometry):
-    pass
+def save_structure_geometry(path, structure_geometry, n_layer, mod_format, L_link, n):
+    path = f"{path}/L_{n_layer}_M_{mod_format}_Ll_{L_link}km_{n}.pkl"
+    data = {"complexity_profile": structure_geometry[0],
+            "ch_out_ker_sz_ratios": structure_geometry[1],
+            "CNN_ch_in": structure_geometry[2],
+            "CNN_ch_out": structure_geometry[3],
+            "strides": structure_geometry[4],
+            "groups": structure_geometry[5]}
+    with open(path, "wb") as file:
+        pickle.dump(data, file)
 
 
 mod_formats = ["ASK2", "ASK4", "PAM2", "PAM4", "QAM4"]
@@ -146,12 +156,13 @@ for j, n_layer in enumerate(n_layers):
             MI_vs_comp_layer_n.append(data[:,:,-2]/data[:,:,-1])
     MI_vs_comp_list.append(np.reshape(np.array(MI_vs_comp_layer_n),(len(mod_formats),len(complexities),len(L_link_list),-1)))
 
+num_best_structures = 4
 struc_idx = []
 for k, n_layer in enumerate(n_layers):
     idx_aux = []
     for i, mod_format in enumerate(mod_formats):
         for j, L_link in enumerate(L_link_list):
-            idx_s, th_max_s, th_min_s = find_idx_common_top(MI_vs_comp_list[k][i,:,j,:],1)
+            idx_s, th_max_s, th_min_s = find_idx_common_top(MI_vs_comp_list[k][i,:,j,:], num_best_structures)
             idx_aux.append(idx_s)
             print(f"{n_layer} layers, {mod_format}, {L_link} km:")
             for idx, th_max, th_min in zip(idx_s, th_max_s, th_min_s):
@@ -170,6 +181,7 @@ for j, n_layer in enumerate(n_layers):
 for j, n_layer in enumerate(n_layers):
     for i, mod_format in enumerate(mod_formats):
         for k, L_link in enumerate(L_link_list):
-            structure_geometry = gen_structure_geometry(structures[j][i,:,struc_idx[j][i,k,0],:,:])
-            save_structure_geometry(structure_geometry)
+            for n in range(struc_idx[j].shape[-1]):
+                structure_geometry = gen_structure_geometry(structures[j][i,:,struc_idx[j][i,k,n],:,:])
+                save_structure_geometry(f"/Users/diegofigueroa/Desktop/CNN_geometries", structure_geometry, n_layer, mod_format, L_link, n)
 
