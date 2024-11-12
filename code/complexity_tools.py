@@ -87,12 +87,12 @@ def design_conv_layer_fix_comp(complexity: float, structure: np.ndarray, layer_i
         structures.append(new_structure.astype(int))
     return structures
 
-def design_CNN_structures_fix_geom(complexities: np.ndarray, complexity_profile: np.ndarray, ch_out_ker_sz_ratios: np.ndarray,
+def design_CNN_structures_fix_geom(complexities: np.ndarray, complexity_profile: np.ndarray, exp_chs: np.ndarray,
                                    CNN_ch_in: int, CNN_ch_out: int, strides: np.ndarray, groups: np.ndarray):
     assert np.isclose(sum(complexity_profile),1), "complexity_profile must add up to 1"
     assert complexity_profile.size == strides.size, "complexity_profile, strides and groups must have the same size, and ch_out_ker_sz_ratios must have one element less"
     assert strides.size == groups.size, "complexity_profile, strides and groups must have the same size, and ch_out_ker_sz_ratios must have one element less"
-    assert complexity_profile.size == ch_out_ker_sz_ratios.size+1, "complexity_profile, strides and groups must have the same size, and ch_out_ker_sz_ratios must have one element less"
+    assert complexity_profile.size == exp_chs.size+1, "complexity_profile, strides and groups must have the same size, and ch_out_ker_sz_ratios must have one element less"
     structures = []
     for complexity in complexities:
         layers_complexity = complexity*complexity_profile
@@ -100,10 +100,10 @@ def design_CNN_structures_fix_geom(complexities: np.ndarray, complexity_profile:
         new_structure[0,0] = CNN_ch_in
         new_structure[3,:] = strides
         new_structure[4,:] = groups
-        for i, ch_out_ker_sz_ratio in enumerate(ch_out_ker_sz_ratios):
+        for i, exp_ch in enumerate(exp_chs):
             prod_layer_ch_out_ker_sz = layers_complexity[i]*groups[i]/(new_structure[0,i]*np.prod(strides[i+1:]))
-            new_structure[1,i] = round_ch_out(np.sqrt(prod_layer_ch_out_ker_sz*ch_out_ker_sz_ratio), int(groups[i]), int(groups[i+1]))
-            new_structure[2,i] = round_kernel_size(new_structure[1,i]/ch_out_ker_sz_ratio)
+            new_structure[1,i] = round_ch_out(np.power(prod_layer_ch_out_ker_sz,exp_ch), int(groups[i]), int(groups[i+1]))
+            new_structure[2,i] = round_kernel_size(prod_layer_ch_out_ker_sz/new_structure[1,i])
             new_structure[0,i+1] = new_structure[1,i]
         new_structure[1,-1] = round_ch_out(CNN_ch_out, int(groups[-1]))
         new_structure[2,-1] = round_kernel_size(layers_complexity[-1]*groups[-1]/(CNN_ch_out*new_structure[0,-1]))

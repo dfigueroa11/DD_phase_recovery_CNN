@@ -31,16 +31,17 @@ def gen_structure_geometry(structures):
     groups = structures[0,4,:]
     CNN_ch_in = int(structures[0,0,0])
     CNN_ch_out = int(structures[0,1,-1])
-    ch_out_ker_sz_ratios = np.mean(structures[:,1,:-1]/structures[:,2,:-1], axis=0)
+    prod_layer_ch_out_ker_sz = structures[:,1,:-1]*structures[:,2,:-1]
+    exp = np.mean(np.log(structures[:,1,:-1])/np.log(prod_layer_ch_out_ker_sz), axis=0)
     complexity_profile = structures[:,1,:]*structures[:,2,:]*structures[:,0,:]*np.prod(strides)/(np.cumprod(strides)*groups)
     complexity_profile = complexity_profile/np.sum(complexity_profile, axis=-1, keepdims=True)
     complexity_profile = complexity_profile.mean(axis=0)/complexity_profile.mean(axis=0).sum()
-    return complexity_profile, ch_out_ker_sz_ratios, CNN_ch_in, CNN_ch_out, strides, groups
+    return complexity_profile, exp, CNN_ch_in, CNN_ch_out, strides, groups
 
 def save_structure_geometry(path, structure_geometry, n_layer, mod_format, L_link, n):
     path = f"{path}/L_{n_layer}_M_{mod_format}_Ll_{L_link}km_{n}.pkl"
     data = {"complexity_profile": structure_geometry[0],
-            "ch_out_ker_sz_ratios": structure_geometry[1],
+            "exp": structure_geometry[1],
             "CNN_ch_in": structure_geometry[2],
             "CNN_ch_out": structure_geometry[3],
             "strides": structure_geometry[4],
@@ -59,12 +60,12 @@ for n_layer in n_layers:
     MI_vs_comp_layer_n = []
     for mod_format in mod_formats:
         for complexity in complexities:
-            file_path = f"/Users/diegofigueroa/Desktop/results/{mod_format}/results_L={n_layer}_C={complexity}.txt"
+            file_path = f"/Users/diegofigueroa/Desktop/results_fix_comp/{mod_format}/results_L={n_layer}_C={complexity}.txt"
             data = read_data(file_path).reshape(3,-1,6)
             MI_vs_comp_layer_n.append(data[:,:,-2]/data[:,:,-1])
     MI_vs_comp_list.append(np.reshape(np.array(MI_vs_comp_layer_n),(len(mod_formats),len(complexities),len(L_link_list),-1)))
 
-num_best_structures = 1
+num_best_structures = 3
 struc_idx = []
 for k, n_layer in enumerate(n_layers):
     idx_aux = []
@@ -82,7 +83,7 @@ for j, n_layer in enumerate(n_layers):
     structures_layer = []
     for i, mod_format in enumerate(mod_formats):
         for k, complexity in enumerate(complexities):
-            file_path = f"/Users/diegofigueroa/Desktop/results/{mod_format}/structures_L={n_layer}_C={complexity}.npy"
+            file_path = f"/Users/diegofigueroa/Desktop/results_fix_comp/{mod_format}/structures_L={n_layer}_C={complexity}.npy"
             structures_layer.append(np.load(file_path))
     structures.append(np.array(structures_layer).reshape(len(mod_formats),len(complexities),-1,5,n_layer))
 
