@@ -41,7 +41,7 @@ def gen_structure_geometry(structures):
 def save_structure_geometry(path, structure_geometry, n_layer, mod_format, L_link, n):
     path = f"{path}/L_{n_layer}_M_{mod_format}_Ll_{L_link}km_{n}.pkl"
     data = {"complexity_profile": structure_geometry[0],
-            "exp": structure_geometry[1],
+            "exp_chs": structure_geometry[1],
             "CNN_ch_in": structure_geometry[2],
             "CNN_ch_out": structure_geometry[3],
             "strides": structure_geometry[4],
@@ -49,6 +49,27 @@ def save_structure_geometry(path, structure_geometry, n_layer, mod_format, L_lin
     with open(path, "wb") as file:
         pickle.dump(data, file)
 
+def gen_structure_geometry2(structures):
+    strides = structures[0,3,:]
+    groups = structures[0,4,:]
+    CNN_ch_in = int(structures[0,0,0])
+    CNN_ch_out = int(structures[0,1,-1])
+    ker_sz_s = structures[:,2,:-1].mean(axis=0)
+    complexity_profile = structures[:,1,:]*structures[:,2,:]*structures[:,0,:]*np.prod(strides)/(np.cumprod(strides)*groups)
+    complexity_profile = complexity_profile/np.sum(complexity_profile, axis=-1, keepdims=True)
+    complexity_profile = complexity_profile.mean(axis=0)/complexity_profile.mean(axis=0).sum()
+    return complexity_profile, ker_sz_s, CNN_ch_in, CNN_ch_out, strides, groups
+
+def save_structure_geometry2(path, structure_geometry, n_layer, mod_format, L_link, n):
+    path = f"{path}/L_{n_layer}_M_{mod_format}_Ll_{L_link}km_{n}.pkl"
+    data = {"complexity_profile": structure_geometry[0],
+            "ker_sz_s": structure_geometry[1],
+            "CNN_ch_in": structure_geometry[2],
+            "CNN_ch_out": structure_geometry[3],
+            "strides": structure_geometry[4],
+            "groups": structure_geometry[5]}
+    with open(path, "wb") as file:
+        pickle.dump(data, file)
 
 mod_formats = ["ASK2", "ASK4", "PAM2", "PAM4", "QAM4"]
 n_layers = [2,3]
@@ -91,6 +112,6 @@ for j, n_layer in enumerate(n_layers):
     for i, mod_format in enumerate(mod_formats):
         for k, L_link in enumerate(L_link_list):
             for n in range(struc_idx[j].shape[-1]):
-                structure_geometry = gen_structure_geometry(structures[j][i,:,struc_idx[j][i,k,n],:,:])
-                save_structure_geometry(f"/Users/diegofigueroa/Desktop/CNN_geometries", structure_geometry, n_layer, mod_format, L_link, n)
+                structure_geometry = gen_structure_geometry2(structures[j][i,:,struc_idx[j][i,k,n],:,:])
+                save_structure_geometry2(f"/Users/diegofigueroa/Desktop/CNN_geometries2", structure_geometry, n_layer, mod_format, L_link, n)
 

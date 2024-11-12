@@ -110,6 +110,97 @@ def design_CNN_structures_fix_geom(complexities: np.ndarray, complexity_profile:
         structures.append(new_structure)
     return structures
 
+def design_CNN_structures_fix_comp2(complexity: int, complexity_profile: np.ndarray, CNN_ch_in: int, CNN_ch_out: int, strides: np.ndarray,
+                                    groups: np.ndarray, ker_sz_lims: np.ndarray, n_str_layer: int=4):
+    ''' Design many structures of CNN with a given complexity
+
+    Arguments:
+    complexity:             number of multiplications per CNN output
+    complexity_profile:     fraction of the complexity spent in each layer (must add up to 1)
+    CNN_ch_in:              number of input channels of the CNN
+    CNN_ch_out:             number of output channels of the CNN
+    strides:                stride for each layer
+    groups:                 groups for each layer
+    n_str_layer:            number of new structures designed per layer.
+                            At the end there will be n_str_layer^(num layers -1) different structures since the last layer is determined by CNN_ch_out
+
+    Returns:
+    list containing all the designed structures
+    '''
+    assert np.isclose(sum(complexity_profile),1), "complexity_profile must add up to 1"
+    assert complexity_profile.size == strides.size and strides.size == groups.size, "complexity_profile, strides and groups must have the same size"
+    layers_complexity_budget = complexity*complexity_profile
+    first_structure = -np.ones((5,strides.size))
+    first_structure[0,0] = CNN_ch_in
+    first_structure[3,:] = strides
+    first_structure[4,:] = groups
+    structures = [first_structure,]
+    for layer_idx, l_comp in enumerate(layers_complexity_budget):
+        new_structures = []
+        for structure in structures:
+            new_structures += design_conv_layer_fix_comp2(l_comp, structure, layer_idx, n_str_layer, CNN_ch_out, ker_sz_lims)
+        structures = new_structures
+    return structures
+
+def design_conv_layer_fix_comp2(complexity: float, structure: np.ndarray, layer_idx: int, num_new_structures: int, CNN_ch_out: int, ker_sz_lims: np.ndarray):
+    '''Starting from a given structure of the first (i-1) conv layers, design 'num' new structures for the i-th conv layer,
+    while having approximately the given complexity for the designed layer, and meeting the requirements of stride and groups.
+
+    Arguments:
+    complexity:     complexity for the current layer, measured in number of multiplications per CNN output
+    structure:      structure of the CNN from the first layer up to the (i-1)-th layer (shape (5,CNN_N_layers),
+                    1st row: in_channels, 2nd row: out_channels, 3rd row: kernel_size, 4th row: stride, 5th row: groups)
+    layer_idx:      index of the layer to design (0 -> first layer, 1 -> second, ...)
+    num_new_structures:     number of new structures to create
+    CNN_ch_out:     number of output channels at the end of the CNN
+
+    Returns:
+    structures:     list of structures designed
+    '''
+    layer_ch_in = structure[0,layer_idx]
+    strides = structure[3,:]
+    groups_current = structure[4, layer_idx]
+    # if we are in the last layer:
+    if layer_idx+1 == strides.size:
+        structure[1,layer_idx] = round_ch_out(CNN_ch_out, int(groups_current))
+        structure[2,layer_idx] = round_kernel_size(complexity*groups_current/(CNN_ch_out*layer_ch_in))
+        return [structure.astype(int),]
+    groups_next = structure[4, layer_idx+1]
+    prod_layer_ch_out_ker_sz = complexity*groups_current/(layer_ch_in*np.prod(strides[layer_idx+1:]))
+    ker_sz_options = np.linspace(ker_sz_lims[0], ker_sz_lims[1], num_new_structures, endpoint=True)
+    structures = []
+    for ker_sz in ker_sz_options:
+        new_structure = structure.copy()
+        new_structure[2,layer_idx] = round_kernel_size(ker_sz)
+        new_structure[1,layer_idx] = round_ch_out(prod_layer_ch_out_ker_sz/new_structure[2,layer_idx], int(groups_current), int(groups_next))
+        # input of the next layer is output of the current one
+        new_structure[0,layer_idx+1] = new_structure[1,layer_idx]
+        structures.append(new_structure.astype(int))
+    return structures
+
+def design_CNN_structures_fix_geom2(complexities: np.ndarray, complexity_profile: np.ndarray, ker_sz_s: np.ndarray,
+                                   CNN_ch_in: int, CNN_ch_out: int, strides: np.ndarray, groups: np.ndarray):
+    assert np.isclose(sum(complexity_profile),1), "complexity_profile must add up to 1"
+    assert complexity_profile.size == strides.size, "complexity_profile, strides and groups must have the same size, and ch_out_ker_sz_ratios must have one element less"
+    assert strides.size == groups.size, "complexity_profile, strides and groups must have the same size, and ch_out_ker_sz_ratios must have one element less"
+    assert complexity_profile.size == ker_sz_s.size+1, "complexity_profile, strides and groups must have the same size, and ch_out_ker_sz_ratios must have one element less"
+    structures = []
+    for complexity in complexities:
+        layers_complexity = complexity*complexity_profile
+        new_structure = -np.ones((5,strides.size), dtype=int)
+        new_structure[0,0] = CNN_ch_in
+        new_structure[3,:] = strides
+        new_structure[4,:] = groups
+        for i, ker_sz in enumerate(ker_sz_s):
+            prod_layer_ch_out_ker_sz = layers_complexity[i]*groups[i]/(new_structure[0,i]*np.prod(strides[i+1:]))
+            new_structure[2,i] = round_kernel_size(ker_sz)
+            new_structure[1,i] = round_ch_out(prod_layer_ch_out_ker_sz/new_structure[2,i], int(groups[i]), int(groups[i+1]))
+            new_structure[0,i+1] = new_structure[1,i]
+        new_structure[1,-1] = round_ch_out(CNN_ch_out, int(groups[-1]))
+        new_structure[2,-1] = round_kernel_size(layers_complexity[-1]*groups[-1]/(CNN_ch_out*new_structure[0,-1]))
+        structures.append(new_structure)
+    return structures
+
 def round_ch_out(ch_out: float, groups_pre: int=1, groups_post: int=1):
     ''' Returns the nearest integer divisible by groups_current_pre and groups_current_post to ch_out
     '''
