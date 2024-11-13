@@ -128,7 +128,7 @@ for j, n_layer in enumerate(n_layers):
                 dd_system = initialize_dd_system()
                 cnn_eq, optimizer, scheduler = initialize_CNN_optimizer(lr, np.append(structure[0],structure[1,-1]), structure[2], structure[3], structure[4])
                 print(f'training model L_link={L_link*1e-3:.0f}km, SNR={SNR_dB} dB, for {mod_format}-{M}, train type: {train_type_name}, {n_layer} layers, complexity: {cnn_eq.complexity:.0f}')
-                # train_CNN(loss_func)
+                train_CNN(loss_func)
                 eval_n_save_CNN()
             with open(f"{folder_path}/results_L={n_layer}.txt", 'a') as file:
                 file.write(f"# {structure_geometry}\n")

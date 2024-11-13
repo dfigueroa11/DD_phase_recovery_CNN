@@ -29,14 +29,14 @@ def plot_complexity_sweep_mod_format(data, mod_format, n_layers, L_link_list):
     
     legend_handles = []
     for i in range(data.shape[2]):
-        legend_handles.append(Line2D([0], [0], color=f"C{i}", label=f"{L_link:2>.0f} km"))
+        legend_handles.append(Line2D([0], [0], color=f"C{i}", label=f"structure {i}"))
     fig.legend(handles=legend_handles, loc='lower center', ncol=len(legend_handles), fontsize='large')
     fig.tight_layout(rect=[0, 0.05, 1, 1])
     return fig
 
 mod_formats = ["ASK2", "ASK4", "PAM2", "PAM4", "QAM4"]
 n_layers = [2,3]
-path = "/Users/diegofigueroa/Desktop/results"
+path = "/Users/diegofigueroa/Desktop/results_comp_sweep2"
 data = []
 for n_layer in n_layers:
     for mod_format in mod_formats:

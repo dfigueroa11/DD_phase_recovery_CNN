@@ -112,6 +112,6 @@ for j, n_layer in enumerate(n_layers):
     for i, mod_format in enumerate(mod_formats):
         for k, L_link in enumerate(L_link_list):
             for n in range(struc_idx[j].shape[-1]):
-                structure_geometry = gen_structure_geometry2(structures[j][i,:,struc_idx[j][i,k,n],:,:])
-                save_structure_geometry2(f"/Users/diegofigueroa/Desktop/CNN_geometries2", structure_geometry, n_layer, mod_format, L_link, n)
+                structure_geometry = gen_structure_geometry(structures[j][i,:,struc_idx[j][i,k,n],:,:])
+                save_structure_geometry(f"/Users/diegofigueroa/Desktop/CNN_geometries", structure_geometry, n_layer, mod_format, L_link, n)
 
