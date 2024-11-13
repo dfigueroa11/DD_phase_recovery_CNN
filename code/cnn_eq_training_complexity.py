@@ -11,7 +11,7 @@ import in_out_tools as io_tool
 from DD_system import DD_system
 import cnn_equalizer
 from loss_functions import loss_funcs
-from complexity_tools import design_CNN_structures_fix_comp
+from complexity_tools import design_CNN_structures_fix_comp2
 
 def initialize_dd_system():
     return hlp.set_up_DD_system(N_os=N_os, N_sim=N_sim, device=device,
@@ -124,13 +124,13 @@ sys_to_simulate = len(complexity_profiles)*n_layers*n_str_layer**(n_layers -1)*l
 print(f"you ara about to simulate {sys_to_simulate} times the system")
 sleep(2)
 
-
+ker_sz_lims = np.array([3, 1.5*N_taps])
 structures = []
 for complexity_profile in complexity_profiles:
     complexity_profile = complexity_profile/complexity_profile.sum()
     for i in range(n_layers):
         strides = np.eye(n_layers)[i]+1
-        structures.extend(design_CNN_structures_fix_comp(complexity, complexity_profile, CNN_ch_in, CNN_ch_out, strides, np.array(groups), n_str_layer))
+        structures.extend(design_CNN_structures_fix_comp2(complexity, complexity_profile, CNN_ch_in, CNN_ch_out, strides, np.array(groups), ker_sz_lims, n_str_layer))
 
 folder_path = io_tool.create_folder(f"results/{train_type_name}/{mod_format}{M:}",0)
 np.save(f"{folder_path}/structures_L={n_layers}_C={complexity}.npy",np.array(structures))
