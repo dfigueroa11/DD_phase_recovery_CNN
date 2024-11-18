@@ -11,12 +11,12 @@ def read_data(path_file):
     return np.loadtxt(path_file, delimiter=",", skiprows=1)
 
 def plot_complexity(mod_format, n_layers, n_str_design, complexities):
-    fig, axs = plt.subplots(len(n_layers), len(complexities), figsize=(15,9))
+    fig, axs = plt.subplots(len(n_layers)+1, len(complexities), figsize=(15,9))
     fig.suptitle(f"Performance for different structures -- {mod_format}, 9 dB")
     for i, n_layer in enumerate(n_layers):
         for j, complexity in enumerate(complexities):
             ## read data
-            file_path = f"/Users/diegofigueroa/Desktop/results/{mod_format}/results_L={n_layer}_C={complexity}.txt"
+            file_path = f"/Users/diegofigueroa/Desktop/results_fix_comp_numch/{mod_format}/results_L={n_layer}_C={complexity}.txt"
             path_plabst = f"/Users/diegofigueroa/Desktop/KIT/HiWi/results_cnn_vs_Plabst_2/txt/Plabst_results/{mod_format}.txt"
             data = read_data(file_path).reshape(3,-1,6)
             L_link_list = data[:,0,0]
@@ -34,13 +34,18 @@ def plot_complexity(mod_format, n_layers, n_str_design, complexities):
                 ax.axhline(ref_MI[k,0], c=f"C{k}", label=f"{L_link:2>.0f} km")
             ax.set_xlabel("Structure number")
             ax.set_ylabel("Rate [bpcu]")
-            ax.legend()
             ax.set_xlim([0,data.shape[1]])
             ax.set_xticks(np.arange(0,data.shape[1]+1,n_str_design**(n_layer-1)))
             ax.set_xticks(np.arange(0,data.shape[1]+1,n_str_design**(n_layer-2)), minor=True)
             ax.grid()
             ax.grid(which='minor', linestyle=":")
-    plt.show()
+    
+    legend_handles = []
+    for i, L_link in enumerate(L_link_list):
+        legend_handles.append(Line2D([0], [0], linestyle='', marker='o', color=f"C{i}", label=f"{L_link:2>.0f} km"))
+    fig.legend(handles=legend_handles, loc='lower center', ncol=len(legend_handles), fontsize='large')
+    fig.tight_layout(rect=[0, 0.05, 1, 1])
+    return fig
 
 def plot_performance_complexity(mod_format, n_layers, n_str_design, complexities):
     fig = plt.figure(figsize=(15,9))
@@ -49,7 +54,7 @@ def plot_performance_complexity(mod_format, n_layers, n_str_design, complexities
     for i, n_layer in enumerate(n_layers):
         for j, complexity in enumerate(complexities):
             ## read data
-            file_path = f"/Users/diegofigueroa/Desktop/results/{mod_format}/results_L={n_layer}_C={complexity}.txt"
+            file_path = f"/Users/diegofigueroa/Desktop/results_fix_comp_numch/{mod_format}/results_L={n_layer}_C={complexity}.txt"
             data = read_data(file_path).reshape(3,-1,6)
             L_link_list = data[:,0,0]
             data_MI_vs_comp = data[:,:,-2]/data[:,:,-1]
@@ -82,21 +87,26 @@ def plot_performance_complexity(mod_format, n_layers, n_str_design, complexities
     
     legend_handles = []
     for i, L_link in enumerate(L_link_list):
-        legend_handles.append(Line2D([0], [0], color=f"C{i}", label=f"{L_link:2>.0f} km"))
+        legend_handles.append(Line2D([0], [0], linestyle='--', marker='o', color=f"C{i}", label=f"{L_link:2>.0f} km"))
     fig.legend(handles=legend_handles, loc='lower center', ncol=len(legend_handles), fontsize='large')
     fig.tight_layout(rect=[0, 0.1, 1, 1])
     return fig
     
 
 mod_formats = ["ASK2", "ASK4", "PAM2", "PAM4", "QAM4"]
-n_layers = [2,3]
+n_layers = [2]
 complexities = [200,500,1000]
 L_link_list = [0,12,30]
 n_str_design = 4
+pdf = PdfPages(f"several_structures_performance_numch.pdf")
 for mod_format in mod_formats:
     plot_complexity(mod_format, n_layers, n_str_design, complexities)
-pdf = PdfPages(f"big_comparison.pdf")
+    pdf.savefig()
+    plt.close()
+pdf.close()
+pdf = PdfPages(f"several_structures_IM_complexity_numch.pdf")
 for mod_format in mod_formats:
     plot_performance_complexity(mod_format, n_layers, n_str_design, complexities)
     pdf.savefig()
+    plt.close()
 pdf.close()
