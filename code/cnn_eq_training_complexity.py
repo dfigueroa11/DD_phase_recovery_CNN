@@ -10,7 +10,7 @@ import performance_metrics as perf_met
 import in_out_tools as io_tool
 from DD_system import DD_system
 import cnn_equalizer
-from loss_functions import loss_funcs
+from loss_functions import loss_funcs_cnn
 from complexity_tools import design_CNN_structures_fix_comp2
 
 def initialize_dd_system():
@@ -106,7 +106,7 @@ complexity_profiles = np.array([[1,1],[1,2],[2,1],[1,3],[3,1]])   # for 2 layers
 # complexity_profiles = np.array([[1,1,1,1],[1,2,3,3],[3,3,2,1],[1,2,2,1],[2,1,1,2]])   # for 4 layers
 n_str_layer = 4
 ##########################################
-loss_func = loss_funcs[train_type]
+loss_func = loss_funcs_cnn[train_type]
 cnn_out_2_u_hat = cnn_equalizer.cnn_out_2_u_hat_funcs[train_type]
 ## Design structures
 L_link = L_link_steps[0]

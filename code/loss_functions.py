@@ -103,9 +103,9 @@ def ce_u_symbols_cnn_out(u_idx: torch.Tensor, u: torch.Tensor, cnn_out: torch.Te
     '''
     return cross_entropy(input=cnn_out, target=u_idx.squeeze())
 
-loss_funcs = {cnn_equalizer.TRAIN_MSE_U_SYMBOLS: MSE_u_symbols_2_cnn_out,
-              cnn_equalizer.TRAIN_MSE_U_MAG_PHASE: MSE_u_mag_phase_2_cnn_out,
-              cnn_equalizer.TRAIN_MSE_U_MAG_PHASE_PHASE_FIX: MSE_u_mag_phase_2_cnn_out_phase_fix,
-              cnn_equalizer.TRAIN_MSE_U_SLDMAG_PHASE: MSE_u_SLDmag_phase_2_cnn_out,
-              cnn_equalizer.TRAIN_MSE_U_SLDMAG_PHASE_PHASE_FIX: MSE_u_SLDmag_phase_2_cnn_out_phase_fix,
-              cnn_equalizer.TRAIN_CE_U_SYMBOLS: ce_u_symbols_cnn_out}
+loss_funcs_cnn = {cnn_equalizer.TRAIN_MSE_U_SYMBOLS: MSE_u_symbols_2_cnn_out,
+                  cnn_equalizer.TRAIN_MSE_U_MAG_PHASE: MSE_u_mag_phase_2_cnn_out,
+                  cnn_equalizer.TRAIN_MSE_U_MAG_PHASE_PHASE_FIX: MSE_u_mag_phase_2_cnn_out_phase_fix,
+                  cnn_equalizer.TRAIN_MSE_U_SLDMAG_PHASE: MSE_u_SLDmag_phase_2_cnn_out,
+                  cnn_equalizer.TRAIN_MSE_U_SLDMAG_PHASE_PHASE_FIX: MSE_u_SLDmag_phase_2_cnn_out_phase_fix,
+                  cnn_equalizer.TRAIN_CE_U_SYMBOLS: ce_u_symbols_cnn_out}

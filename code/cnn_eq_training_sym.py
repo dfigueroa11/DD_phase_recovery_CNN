@@ -9,7 +9,7 @@ import performance_metrics as perf_met
 import in_out_tools as io_tool
 from DD_system import DD_system
 import cnn_equalizer
-from loss_functions import loss_funcs
+from loss_functions import loss_funcs_cnn
 
 def initialize_dd_system():
     return hlp.set_up_DD_system(N_os=N_os, N_sim=N_sim, device=device,
@@ -111,7 +111,7 @@ num_ch = np.array([1,15,30,15,7,3,1])
 ker_lens = np.array([31,21,17,11,7,5])
 strides = np.array([1,1,1,1,1,2])
 activ_func = torch.nn.ELU()
-loss_func = loss_funcs[train_type]
+loss_func = loss_funcs_cnn[train_type]
 cnn_out_2_u_hat = cnn_equalizer.cnn_out_2_u_hat_funcs[train_type]
 ### Training hyperparameter
 batches_per_epoch = 300

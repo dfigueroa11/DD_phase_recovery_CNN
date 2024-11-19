@@ -11,7 +11,7 @@ import performance_metrics as perf_met
 import in_out_tools as io_tool
 from DD_system import DD_system
 import cnn_equalizer
-from loss_functions import loss_funcs
+from loss_functions import loss_funcs_cnn
 from complexity_tools import design_CNN_structures_fix_geom, design_CNN_structures_fix_geom2
 
 def initialize_dd_system():
@@ -104,7 +104,7 @@ checkpoint_per_epoch = 100
 
 ### CNN definition
 activ_func = torch.nn.ELU()
-loss_func = loss_funcs[train_type]
+loss_func = loss_funcs_cnn[train_type]
 cnn_out_2_u_hat = cnn_equalizer.cnn_out_2_u_hat_funcs[train_type]
 n_layers = [2,3]
 num_best_structures = 3
