@@ -22,6 +22,7 @@ def initialize_dd_system():
 
 def initialize_FCN_optimizer(lr):
     m = dd_system.phase_list.numel() if train_type == fcn_ph.TRAIN_CE else 1
+    activ_func_last_layer = Softmax(dim=1) if train_type == fcn_ph.TRAIN_CE else None
     fcn_eq = fcn_ph.FCN_ph(y_len, a_len, fcn_out*m, hidden_layers_len, activ_func, activ_func_last_layer)
     fcn_eq.to(device)
     optimizer = optim.Adam(fcn_eq.parameters(), eps=1e-07, lr=lr)
@@ -60,11 +61,14 @@ def checkpoint_tasks(y: torch.Tensor, u: torch.Tensor, fcn_out: torch.Tensor, ba
         io_tool.save_progress(progress_file_path, batch_size, progress, curr_lr, loss, SERs, MI)
 
 def eval_n_save_CNN():
-    _, u, _, y = dd_system.simulate_transmission(100, N_sym, SNR_dB)
-    cnn_eq.eval()
-    fcn_out = cnn_eq(y).detach().cpu()
-
-    u_hat = cnn_out_2_u_hat(fcn_out, dd_system, Ptx_dB=SNR_dB)
+    total_sym = 100000
+    N_sym = 1000
+    # later we remove the first and last a_len symbols to avoid ringing artifacts
+    _, u, x, y = reshape_data_for_FCN(*dd_system.simulate_transmission(total_sym//N_sym, N_sym+2*a_len, SNR_dB), a_len)
+    fcn_out = fcn_eq(y,torch.abs(x))
+    
+    u = u[:,u.shape[-1]//2]
+    u_hat = fcn_out_2_u_hat(fcn_out, torch.abs(u), dd_system)
     u = u.detach().cpu()
     SERs = perf_met.get_all_SERs(u, u_hat, dd_system, SNR_dB)
     MI = perf_met.get_MI_HD(u, u_hat, dd_system, SNR_dB)
@@ -72,7 +76,7 @@ def eval_n_save_CNN():
     io_tool.print_save_summary(f"{folder_path}/results.txt", lr, L_link, alpha, SNR_dB, SERs, MI)
 
     if all([SNR_dB in SNR_save_fig, lr in lr_save_fig, L_link in L_link_save_fig, alpha in alpha_save_fig]):
-        io_tool.save_fig_summary(u, y.detach().cpu(), u_hat, fcn_out, dd_system, train_type,
+        io_tool.save_fig_summary(u, y.unsqueeze(1).detach().cpu(), u_hat, fcn_out, dd_system, train_type,
                                  folder_path, lr, L_link, alpha, SNR_dB)
 
 
@@ -105,7 +109,6 @@ a_len = 50
 fcn_out = 1
 hidden_layers_len = [2,3,4]
 activ_func = torch.nn.ELU()
-activ_func_last_layer = None
 loss_func = loss_funcs_fcn[train_type]
 fcn_out_2_u_hat = fcn_ph.fcn_out_2_u_hat_funcs[train_type]
 
@@ -118,14 +121,14 @@ lr_save_fig = lr_steps
 checkpoint_per_epoch = 100
 save_progress = False
 
-# folder_path = io_tool.create_folder(f"results/{train_type_name}/{mod_format}{M:}",0)
-# io_tool.init_summary_file(f"{folder_path}/results.txt")
+folder_path = io_tool.create_folder(f"results/{train_type_name}/{mod_format}{M:}",0)
+io_tool.init_summary_file(f"{folder_path}/results.txt")
 
 for lr in lr_steps:
     for L_link in L_link_steps:
         for alpha in alpha_steps:
             for SNR_dB in SNR_dB_steps:
-                # print(f'training model with lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB} dB, for {mod_format}-{M}, train type: {train_type_name}')
+                print(f'training model with lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB} dB, for {mod_format}-{M}, train type: {train_type_name}')
                 dd_system = initialize_dd_system()
                 fcn_eq, optimizer, scheduler = initialize_FCN_optimizer(lr)
                 if save_progress:

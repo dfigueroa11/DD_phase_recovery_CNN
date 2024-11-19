@@ -108,7 +108,7 @@ def reshape_data_for_FCN(ui: torch.Tensor, u: torch.Tensor, x: torch.Tensor, y: 
     return ui, u, x, y
 
 def MSE_FCN_out_2_complex(fcn_out: torch.Tensor, a: torch.Tensor, dd_system: DD_system):
-    return a*torch.exp(1j*fcn_out.squeeze())
+    return (a*torch.exp(1j*fcn_out.squeeze())).detach().cpu()
 
 def CE_FCN_out_2_complex(fcn_out: torch.Tensor, a: torch.Tensor, dd_system: DD_system):
-    return a*torch.exp(1j*dd_system.phase_list[fcn_out.argmax(dim=-1)])
+    return (a*torch.exp(1j*dd_system.phase_list[fcn_out.argmax(dim=-1)]).detach().cpu())
