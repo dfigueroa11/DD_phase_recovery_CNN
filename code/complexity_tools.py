@@ -1,6 +1,8 @@
 import numpy as np
 import torch.nn as nn
 
+################ CNN ####################
+
 def calc_multi_layer_CNN_complexity(conv_layers: nn.ModuleList, sig_len: int=2**20):
     ''' Calculates the complexity of a CNN measured in number of multiplications per output symbol
 
@@ -225,3 +227,7 @@ def round_kernel_size(kernel_size: float):
     if np.round(kernel_size) < kernel_size:
         return int(np.round(kernel_size) + 1)
     return int(np.round(kernel_size) - 1)
+
+################ FCN ####################
+def calc_multi_layer_FCN_complexity(conv_layers: nn.ModuleList, sig_len: int=2**20):
+    return 0
