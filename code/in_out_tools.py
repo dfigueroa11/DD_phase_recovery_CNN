@@ -57,7 +57,7 @@ def print_progress(batch_size: int, progress: float, lr: float, loss: float, SER
     SERs:           [mag ER, phase, ER, SER]
     MI:             Mutual information float
     '''
-    print(f"   Batch size:{batch_size:>4}  prog:{progress:>6.1%}  lr:{lr[0]:>8.2e}  loss:{loss:>9.3e}  "+
+    print(f"   Batch size:{batch_size/1000:>3.0f}k  prog:{progress:>6.1%}  lr:{lr[0]:>8.2e}  loss:{loss:>9.3e}  "+
           f"mag ER:{SERs[0]:>8.2e}  ph ER:{SERs[1]:>8.2e}  SER:{SERs[2]:>8.2e}  MI:{MI:>4.2f}", end='\r')
 
 def init_summary_file(path: str):

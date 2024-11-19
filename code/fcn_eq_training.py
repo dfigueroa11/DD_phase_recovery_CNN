@@ -61,7 +61,7 @@ def checkpoint_tasks(y: torch.Tensor, u: torch.Tensor, fcn_out: torch.Tensor, ba
         io_tool.save_progress(progress_file_path, batch_size, progress, curr_lr, loss, SERs, MI)
 
 def eval_n_save_CNN():
-    total_sym = 100000
+    total_sym = 100_000//a_len*a_len
     N_sym = 1000
     # later we remove the first and last a_len symbols to avoid ringing artifacts
     _, u, x, y = reshape_data_for_FCN(*dd_system.simulate_transmission(total_sym//N_sym, N_sym+2*a_len, SNR_dB), a_len)
@@ -75,7 +75,7 @@ def eval_n_save_CNN():
 
     io_tool.print_save_summary(f"{folder_path}/results.txt", lr, L_link, alpha, SNR_dB, SERs, MI)
 
-    if all([SNR_dB in SNR_save_fig, lr in lr_save_fig, L_link in L_link_save_fig, alpha in alpha_save_fig]):
+    if all([SNR_dB in SNR_save_fig, L_link in L_link_save_fig]):
         io_tool.save_fig_summary(u, y.unsqueeze(1).detach().cpu(), u_hat, fcn_out, dd_system, train_type,
                                  folder_path, lr, L_link, alpha, SNR_dB)
 
@@ -94,8 +94,7 @@ diff_encoder = False
 N_taps = 41
 R_sym = 35e9
 beta2 = -2.168e-26
-alpha_steps = np.arange(0,1)               # for sweep over alpha
-alpha_save_fig = alpha_steps
+alpha = 0
 L_link_steps = np.arange(0,35,6)*1e3      # for sweep over L_link
 L_link_save_fig = L_link_steps[[0,2,-1]]
 SNR_dB_steps = np.arange(-5, 12, 2)                          # for sweep over SNR
@@ -104,36 +103,33 @@ train_type = list(fcn_ph.TRAIN_TYPES.keys())[args.loss_func]
 train_type_name = fcn_ph.TRAIN_TYPES[train_type]
 
 ### FCN definition
-y_len = 50*N_os
-a_len = 50
+y_len = 30*N_os
+a_len = 30
 fcn_out_sym = 1
-hidden_layers_len = [40,15,1]
+hidden_layers_len = [20,10]
 activ_func = torch.nn.ELU()
 loss_func = loss_funcs_fcn[train_type]
 fcn_out_2_u_hat = fcn_ph.fcn_out_2_u_hat_funcs[train_type]
 
 ### Training hyperparameter
 batches_per_epoch = 300
-batch_size_per_epoch = [500, 1000, 5000, 10000]
-lr_steps = np.array([0.004])       # for sweep over lr
-lr_save_fig = lr_steps
+batch_size_per_epoch = [50_000, 100_000, 200_000]
+lr = 0.004
 
 checkpoint_per_epoch = 100
 save_progress = False
 
-folder_path = io_tool.create_folder(f"results/{train_type_name}/{mod_format}{M:}",0)
+folder_path = io_tool.create_folder(f"results2/{train_type_name}/{mod_format}{M:}",0)
 io_tool.init_summary_file(f"{folder_path}/results.txt")
 
-for lr in lr_steps:
-    for L_link in L_link_steps:
-        for alpha in alpha_steps:
-            for SNR_dB in SNR_dB_steps:
-                print(f'training model with lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB} dB, for {mod_format}-{M}, train type: {train_type_name}')
-                dd_system = initialize_dd_system()
-                fcn_eq, optimizer, scheduler = initialize_FCN_optimizer(lr)
-                if save_progress:
-                    progress_file_path = f"{folder_path}/progress_{io_tool.make_file_name(lr, L_link, alpha, SNR_dB)}.txt"
-                    io_tool.init_progress_file(progress_file_path)
-                train_CNN(loss_func)
-                eval_n_save_CNN()
+for L_link in L_link_steps:
+    for SNR_dB in SNR_dB_steps:
+        print(f'training model with lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB} dB, for {mod_format}-{M}, train type: {train_type_name}')
+        dd_system = initialize_dd_system()
+        fcn_eq, optimizer, scheduler = initialize_FCN_optimizer(lr)
+        if save_progress:
+            progress_file_path = f"{folder_path}/progress_{io_tool.make_file_name(lr, L_link, alpha, SNR_dB)}.txt"
+            io_tool.init_progress_file(progress_file_path)
+        train_CNN(loss_func)
+        eval_n_save_CNN()
 io_tool.write_complexity_in_summary_file(f"{folder_path}/results.txt", fcn_eq.complexity)
