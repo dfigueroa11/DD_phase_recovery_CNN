@@ -48,8 +48,8 @@ class DD_system():
         Ptx_dB:         transmission power in dB used for the simulation (float)
         
         Returns:
-        ui: the index of the symbols before the differential encoding (Tensor of size (batch_size, 1, N_sym))
-        u:  the symbols before the differential encoding (Tensor of size (batch_size, 1, N_sym))
+        ui: the index of the symbols before the differential encoding (Tensor of size (batch_size, 1, N_sym))  
+        u:  the symbols before the differential encoding (Tensor of size (batch_size, 1, N_sym))  
         x:  the symbols after the differential encoding (Tensor of size (batch_size, 1, N_sym)) if diff_encoder is None u = x  
         y:  the samples after the transmission (Tensor of size (batch_size, 1, N_sym*N_os))
         '''
