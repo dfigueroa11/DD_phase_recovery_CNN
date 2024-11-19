@@ -29,9 +29,9 @@ class FCN_ph(nn.Module):
 
     def forward(self, y: torch.Tensor, a: torch.Tensor):
         out = torch.cat((y,a), dim=-1)
-        for layer in zip(self.layers[:-1], ):
+        for layer in self.layers[:-1]:
             out = self.activ_func(self.apply_layer(out, layer))
-        out = self.apply_layer(out, layer)
+        out = self.apply_layer(out, self.layers[-1])
         if self.activ_func_last_layer is not None:
             return self.activ_func_last_layer(out)
         return out
