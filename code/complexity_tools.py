@@ -229,6 +229,6 @@ def round_kernel_size(kernel_size: float):
     return int(np.round(kernel_size) - 1)
 
 ################ FCN ####################
-def calc_multi_layer_FCN_complexity(lin_layers: nn.ModuleList, sym_out):
-    assert all([isinstance(module, nn.Linear) for module in lin_layers]), "all layers must be instance of nn.Linear"
-    return np.ceil(sum([ll.weight.data.numel() for ll in lin_layers])/sym_out)
+def calc_multi_layer_FCN_complexity(layers: nn.ModuleList, sym_out):
+    assert all([isinstance(module, nn.Linear) or isinstance(module, nn.Bilinear) for module in layers]), "all layers must be instance of nn.Linear or  nn.Bilinear"
+    return np.ceil(sum([l.weight.data.numel() for l in layers])/sym_out)
