@@ -7,8 +7,9 @@ import numpy as np
 import help_functions as hlp
 import performance_metrics as perf_met
 import in_out_tools as io_tool
+from data_conversion_tools import reshape_data_for_FCN
 from DD_system import DD_system
-import cnn_equalizer
+import fcn_ph
 from loss_functions import loss_funcs
 
 def initialize_dd_system():
@@ -19,46 +20,35 @@ def initialize_dd_system():
                                 alpha=alpha,
                                 L_link=L_link, R_sym=R_sym, beta2=beta2)
 
-def initialize_CNN_optimizer(lr):
-    groups_list = [1]*len(ker_lens)
-    num_ch_aux = num_ch.copy()
-    strides_aux = strides.copy()
-    ker_lens_aux = ker_lens.copy()
-    activ_func_last_layer = None
-    # if modulation have multiple phases and magnitudes stack two CNN in parallel for each component.
-    if dd_system.multi_mag_const and dd_system.multi_phase_const:
-        groups_list = [1]+[2]*(len(ker_lens)-1)
-        num_ch_aux[1:] = num_ch_aux[1:]*2
-    if train_type == cnn_equalizer.TRAIN_CE_U_SYMBOLS:
-        groups_list.append(1)
-        num_ch_aux = np.append(num_ch_aux,M)
-        strides_aux = np.append(strides_aux,1)
-        ker_lens_aux = np.append(ker_lens_aux, 7)
-        activ_func_last_layer = Softmax(dim=1)
-    cnn_eq = cnn_equalizer.CNN_equalizer(num_ch_aux, ker_lens_aux, strides_aux, activ_func, groups_list, activ_func_last_layer)
-    cnn_eq.to(device)
-    optimizer = optim.Adam(cnn_eq.parameters(), eps=1e-07, lr=lr)
+def initialize_FCN_optimizer(lr):
+    fcn_eq = fcn_ph.FCN_ph(y_len, a_len, fcn_out, hidden_layers_len, activ_func, activ_func_last_layer)
+    fcn_eq.to(device)
+    optimizer = optim.Adam(fcn_eq.parameters(), eps=1e-07, lr=lr)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5)
-    return cnn_eq, optimizer, scheduler
+    return fcn_eq, optimizer, scheduler
 
 def train_CNN(loss_function):
-    cnn_eq.train()
+    fcn_eq.train()
     for batch_size in batch_size_per_epoch:
         for i in range(batches_per_epoch):
-            u_idx, u, _, y = dd_system.simulate_transmission(batch_size, N_sym, SNR_dB)
-            cnn_out = cnn_eq(y)
+            # use some parallelization for faster execution
+            total_sym = batch_size*a_len
+            N_sym = 1000
+            # later we remove the first and last a_len symbols to avoid ringing artifacts
+            u_idx, u, x, y = reshape_data_for_FCN(*dd_system.simulate_transmission(total_sym//N_sym, N_sym+2*a_len, SNR_dB), a_len)
+            fcn_out = fcn_eq(y,torch.abs(x))
             
-            loss = loss_function(u_idx, u, cnn_out, dd_system)
+            loss = loss_function(u_idx, u, fcn_out, dd_system)
             
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
             if (i+1)%(batches_per_epoch//checkpoint_per_epoch) == 0:
-                checkpoint_tasks(y, u.detach().cpu(), cnn_out.detach().cpu(), batch_size, (i+1)/batches_per_epoch, loss.detach().cpu().numpy())
+                checkpoint_tasks(y, u.detach().cpu(), fcn_out.detach().cpu(), batch_size, (i+1)/batches_per_epoch, loss.detach().cpu().numpy())
         print()
 
-def checkpoint_tasks(y, u, cnn_out, batch_size, progress, loss):
-    u_hat = cnn_out_2_u_hat(cnn_out, dd_system, Ptx_dB=SNR_dB)
+def checkpoint_tasks(y, u, fcn_out, batch_size, progress, loss):
+    u_hat = cnn_out_2_u_hat(fcn_out, dd_system, Ptx_dB=SNR_dB)
     SERs = perf_met.get_all_SERs(u, u_hat, dd_system, SNR_dB)
     scheduler.step(sum(SERs))
     curr_lr = scheduler.get_last_lr()
@@ -70,9 +60,9 @@ def checkpoint_tasks(y, u, cnn_out, batch_size, progress, loss):
 def eval_n_save_CNN():
     _, u, _, y = dd_system.simulate_transmission(100, N_sym, SNR_dB)
     cnn_eq.eval()
-    cnn_out = cnn_eq(y).detach().cpu()
+    fcn_out = cnn_eq(y).detach().cpu()
 
-    u_hat = cnn_out_2_u_hat(cnn_out, dd_system, Ptx_dB=SNR_dB)
+    u_hat = cnn_out_2_u_hat(fcn_out, dd_system, Ptx_dB=SNR_dB)
     u = u.detach().cpu()
     SERs = perf_met.get_all_SERs(u, u_hat, dd_system, SNR_dB)
     MI = perf_met.get_MI_HD(u, u_hat, dd_system, SNR_dB)
@@ -80,7 +70,7 @@ def eval_n_save_CNN():
     io_tool.print_save_summary(f"{folder_path}/results.txt", lr, L_link, alpha, SNR_dB, SERs, MI)
 
     if all([SNR_dB in SNR_save_fig, lr in lr_save_fig, L_link in L_link_save_fig, alpha in alpha_save_fig]):
-        io_tool.save_fig_summary(u, y.detach().cpu(), u_hat, cnn_out, dd_system, train_type,
+        io_tool.save_fig_summary(u, y.detach().cpu(), u_hat, fcn_out, dd_system, train_type,
                                  folder_path, lr, L_link, alpha, SNR_dB)
 
 
@@ -104,38 +94,41 @@ L_link_steps = np.arange(0,35,6)*1e3      # for sweep over L_link
 L_link_save_fig = L_link_steps[[0,2,-1]]
 SNR_dB_steps = np.arange(-5, 12, 2)                          # for sweep over SNR
 SNR_save_fig = SNR_dB_steps[[0,5,-2,-1]]
-train_type = list(cnn_equalizer.TRAIN_TYPES.keys())[args.loss_func]
-train_type_name = cnn_equalizer.TRAIN_TYPES[train_type]
-### CNN definition
-num_ch = np.array([1,15,30,15,7,3,1])
-ker_lens = np.array([31,21,17,11,7,5])
-strides = np.array([1,1,1,1,1,2])
+# train_type = list(cnn_equalizer.TRAIN_TYPES.keys())[args.loss_func]
+# train_type_name = cnn_equalizer.TRAIN_TYPES[train_type]
+
+### FCN definition
+y_len = 50
+a_len = 50
+fcn_out = 1
+hidden_layers_len = [2,3,4]
 activ_func = torch.nn.ELU()
-loss_func = loss_funcs[train_type]
-cnn_out_2_u_hat = cnn_equalizer.cnn_out_2_u_hat_funcs[train_type]
+activ_func_last_layer = None
+loss_func = 3#loss_funcs[train_type]
+# cnn_out_2_u_hat = cnn_equalizer.cnn_out_2_u_hat_funcs[train_type]
+
 ### Training hyperparameter
 batches_per_epoch = 300
-batch_size_per_epoch = [100, 300, 500]
-N_sym = 1000
+batch_size_per_epoch = [500, 1000, 5000, 10000]
 lr_steps = np.array([0.004])       # for sweep over lr
 lr_save_fig = lr_steps
 
 checkpoint_per_epoch = 100
-save_progress = True
+save_progress = False
 
-folder_path = io_tool.create_folder(f"results/{train_type_name}/{mod_format}{M:}",0)
-io_tool.init_summary_file(f"{folder_path}/results.txt")
+# folder_path = io_tool.create_folder(f"results/{train_type_name}/{mod_format}{M:}",0)
+# io_tool.init_summary_file(f"{folder_path}/results.txt")
 
 for lr in lr_steps:
     for L_link in L_link_steps:
         for alpha in alpha_steps:
             for SNR_dB in SNR_dB_steps:
-                print(f'training model with lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB} dB, for {mod_format}-{M}, train type: {train_type_name}')
+                # print(f'training model with lr={lr}, L_link={L_link*1e-3:.0f}km, alpha={alpha}, SNR={SNR_dB} dB, for {mod_format}-{M}, train type: {train_type_name}')
                 dd_system = initialize_dd_system()
-                cnn_eq, optimizer, scheduler = initialize_CNN_optimizer(lr)
+                fcn_eq, optimizer, scheduler = initialize_FCN_optimizer(lr)
                 if save_progress:
                     progress_file_path = f"{folder_path}/progress_{io_tool.make_file_name(lr, L_link, alpha, SNR_dB)}.txt"
                     io_tool.init_progress_file(progress_file_path)
                 train_CNN(loss_func)
                 eval_n_save_CNN()
-io_tool.write_complexity_in_summary_file(f"{folder_path}/results.txt", cnn_eq.complexity)
+io_tool.write_complexity_in_summary_file(f"{folder_path}/results.txt", fcn_eq.complexity)

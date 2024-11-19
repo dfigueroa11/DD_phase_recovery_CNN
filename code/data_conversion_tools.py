@@ -97,3 +97,11 @@ def APPs_2_u(APPs: torch.Tensor, dd_system: DD_system, Ptx_dB: float=0):
     '''
     Ptx_lin = torch.tensor([10**(Ptx_dB/10)], dtype=torch.float32)
     return torch.sqrt(Ptx_lin)*dd_system.constellation[torch.argmax(APPs, dim=1, keepdim=True)].cpu()
+
+def reshape_data_for_FCN(ui: torch.Tensor, u: torch.Tensor, x: torch.Tensor, y: torch.Tensor, a_len):
+    N_os = y.shape[-1]//u.shape[-1]
+    ui = torch.reshape(ui.squeeze()[:,a_len:-a_len], (-1,a_len))
+    u = torch.reshape(u.squeeze()[:,a_len:-a_len], (-1,a_len))
+    x = torch.reshape(x.squeeze()[:,a_len:-a_len], (-1,a_len))
+    y = torch.reshape(y.squeeze()[:,N_os*a_len:-N_os*a_len], (-1,N_os*a_len))
+    return ui, u, x, y
