@@ -44,12 +44,13 @@ def train_CNN(loss_function):
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
-            if (i+1)%(batches_per_epoch//checkpoint_per_epoch) == 0:
+            if (i+1)%(batches_per_epoch//checkpoint_per_epoch) == 0 or True:
                 checkpoint_tasks(y, u.detach().cpu(), fcn_out.detach().cpu(), batch_size, (i+1)/batches_per_epoch, loss.detach().cpu().numpy())
         print()
 
-def checkpoint_tasks(y, u, fcn_out, batch_size, progress, loss):
-    u_hat = cnn_out_2_u_hat(fcn_out, dd_system, Ptx_dB=SNR_dB)
+def checkpoint_tasks(y: torch.Tensor, u: torch.Tensor, fcn_out: torch.Tensor, batch_size, progress, loss):
+    u = u[:,u.shape[-1]//2]
+    u_hat = fcn_out_2_u_hat(fcn_out, torch.abs(u),dd_system)
     SERs = perf_met.get_all_SERs(u, u_hat, dd_system, SNR_dB)
     scheduler.step(sum(SERs))
     curr_lr = scheduler.get_last_lr()
@@ -106,7 +107,7 @@ hidden_layers_len = [2,3,4]
 activ_func = torch.nn.ELU()
 activ_func_last_layer = None
 loss_func = loss_funcs_fcn[train_type]
-# cnn_out_2_u_hat = fcn_ph.cnn_out_2_u_hat_funcs[train_type]
+fcn_out_2_u_hat = fcn_ph.fcn_out_2_u_hat_funcs[train_type]
 
 ### Training hyperparameter
 batches_per_epoch = 300

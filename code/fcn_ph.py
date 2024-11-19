@@ -32,4 +32,7 @@ class FCN_ph(nn.Module):
         if self.activ_func_last_layer is not None:
             return self.activ_func_last_layer(out)
         return out
-    
+
+fcn_out_2_u_hat_funcs = {TRAIN_MSE: dconv_tools.MSE_FCN_out_2_complex,
+                         TRAIN_MSE_PHASE_FIX: dconv_tools.MSE_FCN_out_2_complex,
+                         TRAIN_CE: dconv_tools.CE_FCN_out_2_complex}
