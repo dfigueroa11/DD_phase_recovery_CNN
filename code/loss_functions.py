@@ -4,6 +4,7 @@ from torch.nn.functional import mse_loss, cross_entropy
 import data_conversion_tools as dconv_tools
 from DD_system import DD_system
 import cnn_equalizer
+import fcn_ph
 
 ################ CNN #####################
 
@@ -123,3 +124,7 @@ def MSE_fcn_phase_fix(u: torch.Tensor, fcn_out: torch.Tensor, dd_system: DD_syst
 def CE_fcn(u: torch.Tensor, fcn_out: torch.Tensor, dd_system: DD_system):
     phase_idx = torch.argmin(torch.abs(dd_system.phase_list[...,None]-torch.remainder(torch.angle(u[:,u.shape[-1]//2]),2*torch.pi)), dim=0)
     return cross_entropy(input=fcn_out, target=phase_idx)
+
+loss_funcs_fcn = {fcn_ph.TRAIN_MSE: MSE_fcn,
+                  fcn_ph.TRAIN_MSE_PHASE_FIX: MSE_fcn_phase_fix,
+                  fcn_ph.TRAIN_CE: CE_fcn}

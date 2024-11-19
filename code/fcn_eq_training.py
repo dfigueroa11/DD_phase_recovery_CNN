@@ -10,7 +10,7 @@ import in_out_tools as io_tool
 from data_conversion_tools import reshape_data_for_FCN
 from DD_system import DD_system
 import fcn_ph
-from loss_functions import MSE_fcn, MSE_fcn_phase_fix, CE_fcn
+from loss_functions import loss_funcs_fcn
 
 def initialize_dd_system():
     return hlp.set_up_DD_system(N_os=N_os, N_sim=N_sim, device=device,
@@ -21,7 +21,8 @@ def initialize_dd_system():
                                 L_link=L_link, R_sym=R_sym, beta2=beta2)
 
 def initialize_FCN_optimizer(lr):
-    fcn_eq = fcn_ph.FCN_ph(y_len, a_len, fcn_out, hidden_layers_len, activ_func, activ_func_last_layer)
+    m = dd_system.phase_list.numel() if train_type == fcn_ph.TRAIN_CE else 1
+    fcn_eq = fcn_ph.FCN_ph(y_len, a_len, fcn_out*m, hidden_layers_len, activ_func, activ_func_last_layer)
     fcn_eq.to(device)
     optimizer = optim.Adam(fcn_eq.parameters(), eps=1e-07, lr=lr)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5)
@@ -77,7 +78,7 @@ def eval_n_save_CNN():
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("We are using the following device for learning:",device)
 
-args = io_tool.process_args()
+args = io_tool.process_args(fcn_ph.TRAIN_TYPES)
 ### System definition
 N_os = 2
 N_sim = 2
@@ -94,18 +95,18 @@ L_link_steps = np.arange(0,35,6)*1e3      # for sweep over L_link
 L_link_save_fig = L_link_steps[[0,2,-1]]
 SNR_dB_steps = np.arange(-5, 12, 2)                          # for sweep over SNR
 SNR_save_fig = SNR_dB_steps[[0,5,-2,-1]]
-# train_type = list(cnn_equalizer.TRAIN_TYPES.keys())[args.loss_func]
-# train_type_name = cnn_equalizer.TRAIN_TYPES[train_type]
+train_type = list(fcn_ph.TRAIN_TYPES.keys())[args.loss_func]
+train_type_name = fcn_ph.TRAIN_TYPES[train_type]
 
 ### FCN definition
 y_len = 50*N_os
 a_len = 50
-fcn_out = 4
+fcn_out = 1
 hidden_layers_len = [2,3,4]
 activ_func = torch.nn.ELU()
 activ_func_last_layer = None
-loss_func = CE_fcn
-# cnn_out_2_u_hat = cnn_equalizer.cnn_out_2_u_hat_funcs[train_type]
+loss_func = loss_funcs_fcn[train_type]
+# cnn_out_2_u_hat = fcn_ph.cnn_out_2_u_hat_funcs[train_type]
 
 ### Training hyperparameter
 batches_per_epoch = 300

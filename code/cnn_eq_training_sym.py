@@ -87,7 +87,7 @@ def eval_n_save_CNN():
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("We are using the following device for learning:",device)
 
-args = io_tool.process_args()
+args = io_tool.process_args(cnn_equalizer.TRAIN_TYPES)
 ### System definition
 N_os = 2
 N_sim = 2

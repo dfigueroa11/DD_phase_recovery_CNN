@@ -254,7 +254,7 @@ def plot_histogram(ax1:axes.Axes, ax2:axes.Axes, y: torch.Tensor, u_hat: torch.T
     ax2.set_ylabel("pdf estimate")
     ax2.grid()
 
-def process_args():
+def process_args(train_types):
     formatter = lambda prog: argparse.RawTextHelpFormatter(prog, max_help_position=60)
     parser = argparse.ArgumentParser(
         description="CNN equalizer for Direct Detection channels with phase recovery",
@@ -276,8 +276,8 @@ def process_args():
         "--loss_func",
         "-l",
         type=int,
-        help=f"int to select the loss function: {TRAIN_TYPES}",
-        choices=TRAIN_TYPES.keys(),
+        help=f"int to select the loss function: {train_types}",
+        choices=train_types.keys(),
         default=0)
     return parser.parse_args()
  

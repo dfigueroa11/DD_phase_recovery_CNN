@@ -4,6 +4,12 @@ import data_conversion_tools as dconv_tools
 
 from complexity_tools import calc_multi_layer_FCN_complexity
 
+TRAIN_MSE = 0
+TRAIN_MSE_PHASE_FIX = 1
+TRAIN_CE = 2
+TRAIN_TYPES = {TRAIN_MSE: "TRAIN_MSE",
+               TRAIN_MSE_PHASE_FIX: "TRAIN_MSE_PHASE_FIX",
+               TRAIN_CE: "TRAIN_CE"}
 
 class FCN_ph(nn.Module):
 
