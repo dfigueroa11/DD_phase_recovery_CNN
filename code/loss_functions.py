@@ -5,6 +5,8 @@ import data_conversion_tools as dconv_tools
 from DD_system import DD_system
 import cnn_equalizer
 
+################ CNN #####################
+
 def MSE_u_symbols_2_cnn_out(u_idx: torch.Tensor, u: torch.Tensor, cnn_out: torch.Tensor, dd_system: DD_system):
     ''' Calculates the loss such that the CNN_output tends towards the complex symbols
     
@@ -109,3 +111,15 @@ loss_funcs_cnn = {cnn_equalizer.TRAIN_MSE_U_SYMBOLS: MSE_u_symbols_2_cnn_out,
                   cnn_equalizer.TRAIN_MSE_U_SLDMAG_PHASE: MSE_u_SLDmag_phase_2_cnn_out,
                   cnn_equalizer.TRAIN_MSE_U_SLDMAG_PHASE_PHASE_FIX: MSE_u_SLDmag_phase_2_cnn_out_phase_fix,
                   cnn_equalizer.TRAIN_CE_U_SYMBOLS: ce_u_symbols_cnn_out}
+
+################ FCN #####################
+def MSE_fcn(u: torch.Tensor, fcn_out: torch.Tensor, dd_system: DD_system):
+    return mse_loss(fcn_out.squeeze(), torch.angle(u[:,u.shape[-1]//2]))
+
+def MSE_fcn_phase_fix(u: torch.Tensor, fcn_out: torch.Tensor, dd_system: DD_system):
+    phase_diff = torch.abs(torch.remainder(torch.abs(torch.angle(u[:,u.shape[-1]//2])-fcn_out.squeeze()+torch.pi),2*torch.pi)-torch.pi)
+    return torch.mean(torch.square(phase_diff))
+
+def CE_fcn(u: torch.Tensor, fcn_out: torch.Tensor, dd_system: DD_system):
+    phase_idx = torch.argmin(torch.abs(dd_system.phase_list[...,None]-torch.remainder(torch.angle(u[:,u.shape[-1]//2]),2*torch.pi)), dim=0)
+    return cross_entropy(input=fcn_out, target=phase_idx)

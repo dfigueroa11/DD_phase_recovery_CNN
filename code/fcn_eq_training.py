@@ -10,7 +10,7 @@ import in_out_tools as io_tool
 from data_conversion_tools import reshape_data_for_FCN
 from DD_system import DD_system
 import fcn_ph
-from loss_functions import loss_funcs
+from loss_functions import MSE_fcn, MSE_fcn_phase_fix, CE_fcn
 
 def initialize_dd_system():
     return hlp.set_up_DD_system(N_os=N_os, N_sim=N_sim, device=device,
@@ -35,10 +35,10 @@ def train_CNN(loss_function):
             total_sym = batch_size*a_len
             N_sym = 1000
             # later we remove the first and last a_len symbols to avoid ringing artifacts
-            u_idx, u, x, y = reshape_data_for_FCN(*dd_system.simulate_transmission(total_sym//N_sym, N_sym+2*a_len, SNR_dB), a_len)
+            _, u, x, y = reshape_data_for_FCN(*dd_system.simulate_transmission(total_sym//N_sym, N_sym+2*a_len, SNR_dB), a_len)
             fcn_out = fcn_eq(y,torch.abs(x))
             
-            loss = loss_function(u_idx, u, fcn_out, dd_system)
+            loss = loss_function(u, fcn_out, dd_system)
             
             loss.backward()
             optimizer.step()
@@ -100,11 +100,11 @@ SNR_save_fig = SNR_dB_steps[[0,5,-2,-1]]
 ### FCN definition
 y_len = 50*N_os
 a_len = 50
-fcn_out = 1
+fcn_out = 4
 hidden_layers_len = [2,3,4]
 activ_func = torch.nn.ELU()
 activ_func_last_layer = None
-loss_func = 3#loss_funcs[train_type]
+loss_func = CE_fcn
 # cnn_out_2_u_hat = cnn_equalizer.cnn_out_2_u_hat_funcs[train_type]
 
 ### Training hyperparameter

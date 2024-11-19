@@ -265,7 +265,7 @@ def process_args():
         type=str,
         help="modulation format",
         choices=["ASK", "PAM", "DDQAM", "QAM"],
-        default="PAM")
+        default="QAM")
     parser.add_argument(
         "--order",
         "-o",

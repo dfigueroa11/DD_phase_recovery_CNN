@@ -29,6 +29,8 @@ class DD_system():
         self.N_sim = N_sim
         self.d = N_sim//N_os
         self.constellation = constellation.to(device)
+        self.phase_list = torch.torch.unique(torch.round(torch.angle(constellation), decimals=10)).to(device)
+        self.phase_list,_ = torch.sort(torch.remainder(self.phase_list,2*torch.pi))
         self.multi_mag_const = torch.unique(torch.round(torch.abs(self.constellation), decimals=5)).numel() > 1
         self.multi_phase_const = torch.unique(torch.round(torch.angle(self.constellation), decimals=5)).numel() > 1
         self.diff_encoder = diff_encoder
