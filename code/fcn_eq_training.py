@@ -23,7 +23,7 @@ def initialize_dd_system():
 def initialize_FCN_optimizer(lr):
     m = dd_system.phase_list.numel() if train_type == fcn_ph.TRAIN_CE else 1
     activ_func_last_layer = Softmax(dim=1) if train_type == fcn_ph.TRAIN_CE else None
-    fcn_eq = fcn_ph.FCN_ph(y_len, a_len, fcn_out*m, hidden_layers_len, activ_func, activ_func_last_layer)
+    fcn_eq = fcn_ph.FCN_ph(y_len, a_len, fcn_out_sym, m, hidden_layers_len, activ_func, activ_func_last_layer)
     fcn_eq.to(device)
     optimizer = optim.Adam(fcn_eq.parameters(), eps=1e-07, lr=lr)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5)
@@ -106,8 +106,8 @@ train_type_name = fcn_ph.TRAIN_TYPES[train_type]
 ### FCN definition
 y_len = 50*N_os
 a_len = 50
-fcn_out = 1
-hidden_layers_len = [2,3,4]
+fcn_out_sym = 1
+hidden_layers_len = [40,15,1]
 activ_func = torch.nn.ELU()
 loss_func = loss_funcs_fcn[train_type]
 fcn_out_2_u_hat = fcn_ph.fcn_out_2_u_hat_funcs[train_type]
