@@ -98,7 +98,7 @@ SNR_save_fig = SNR_dB_steps[[0,5,-2,-1]]
 # train_type_name = cnn_equalizer.TRAIN_TYPES[train_type]
 
 ### FCN definition
-y_len = 50
+y_len = 50*N_os
 a_len = 50
 fcn_out = 1
 hidden_layers_len = [2,3,4]

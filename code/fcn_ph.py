@@ -10,8 +10,8 @@ class FCN_ph(nn.Module):
     def __init__(self, y_len: int, a_len: int, fcn_out_len: int, hidden_layers_len: list[int], activ_func, activ_func_last_layer=None):
         super().__init__()
         self.lin_layers = nn.ModuleList()
-        layer_in_lens = [y_len+a_len] + hidden_layers_len[:-1]
-        layer_out_lens = hidden_layers_len[1:] + [fcn_out_len]
+        layer_in_lens = [y_len+a_len] + hidden_layers_len[:]
+        layer_out_lens = hidden_layers_len[:] + [fcn_out_len]
         for in_len, out_len in zip(layer_in_lens, layer_out_lens):
             self.lin_layers.append(nn.Linear(in_len, out_len))
         self.activ_func = activ_func
