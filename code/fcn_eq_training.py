@@ -118,7 +118,7 @@ batch_size_per_epoch = [50_000, 100_000, 200_000]
 lr = 0.004
 
 checkpoint_per_epoch = 100
-save_progress = False
+save_progress = True
 
 folder_path = io_tool.create_folder(f"results2/{train_type_name}/{mod_format}{M:}",0)
 io_tool.init_summary_file(f"{folder_path}/results.txt")
