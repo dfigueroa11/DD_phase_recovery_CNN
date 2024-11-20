@@ -51,7 +51,7 @@ def train_CNN(loss_function):
 
 def checkpoint_tasks(y: torch.Tensor, u: torch.Tensor, fcn_out: torch.Tensor, batch_size, progress, loss):
     u = u[:,u.shape[-1]//2]
-    u_hat = fcn_out_2_u_hat(fcn_out, torch.abs(u),dd_system)
+    u_hat = fcn_out_2_u_hat(fcn_out, torch.abs(u), dd_system)
     SERs = perf_met.get_all_SERs(u, u_hat, dd_system, SNR_dB)
     scheduler.step(sum(SERs))
     curr_lr = scheduler.get_last_lr()
@@ -65,9 +65,9 @@ def eval_n_save_CNN():
     N_sym = 1000
     # later we remove the first and last a_len symbols to avoid ringing artifacts
     _, u, x, y = reshape_data_for_FCN(*dd_system.simulate_transmission(total_sym//N_sym, N_sym+2*a_len, SNR_dB), a_len)
-    fcn_out = fcn_eq(y,torch.abs(x))
+    fcn_out = fcn_eq(y,torch.abs(x)).detach().cpu()
     
-    u = u[:,u.shape[-1]//2]
+    u = u[:,u.shape[-1]//2].detach().cpu()
     u_hat = fcn_out_2_u_hat(fcn_out, torch.abs(u), dd_system)
     u = u.detach().cpu()
     SERs = perf_met.get_all_SERs(u, u_hat, dd_system, SNR_dB)
