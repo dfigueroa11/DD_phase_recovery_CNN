@@ -150,8 +150,8 @@ if __name__=="__main__":
         paths_cnn = [f"{path}/{loss_funcs[loss_idx]}/{mod_format}/{file_name}" for loss_idx in loss_funcs_selector]
         lab_cnn = [labels_cnn[loss_idx] for loss_idx in loss_funcs_selector]
         path_plabst = f"/Users/diegofigueroa/Desktop/KIT/HiWi/results_cnn_vs_Plabst_2/txt/Plabst_results/{mod_format}.txt"
-        paths_fcn = [f"/Users/diegofigueroa/Desktop/results2/{loss_func}/{mod_format}_0/{file_name}" for loss_func in loss_funcs_fcn]
-        plot_FCN_CNN_Plabst_comparison([paths_fcn, paths_cnn, path_plabst], mod_format, [labels_fcn, lab_cnn, labels_plabst], SER_plot=True, MI_plot=True, pdf=pdf)
+        paths_fcn = [f"/Users/diegofigueroa/Desktop/results/{loss_func}/{mod_format}_0/{file_name}" for loss_func in loss_funcs_fcn]
+        plot_FCN_CNN_Plabst_comparison([paths_fcn, paths_cnn, path_plabst], mod_format, [labels_fcn, lab_cnn, labels_plabst], SER_plot=False, MI_plot=True, pdf=pdf)
     if save_fig:
         pdf.close()
     

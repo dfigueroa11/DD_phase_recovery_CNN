@@ -40,10 +40,15 @@ def plot_all_progress(progress_data, title):
 if __name__=="__main__":
     L_link_steps = np.arange(0,35,6)
     SNR_dB_steps = np.arange(-5, 12, 2)
-    mod_format = "PAM2"
-    for L_link in L_link_steps:
-        for SNR in SNR_dB_steps:
-            path = f"/Users/diegofigueroa/Desktop/{mod_format}_sym_0/progress_lr0p004_Llink{L_link}km_alpha0p0_{SNR}dB.txt"
-            progress_data = read_progress_file(path)
-            plot_all_progress(progress_data, f"{mod_format} -- Link length: {L_link} km -- SNR: {SNR} dB")
+    mod_formats = ["ASK2","ASK4","QAM4"]
+    save_fig = False
+    loss_funcs_fcn = ["TRAIN_CE", "TRAIN_MSE", "TRAIN_MSE_PHASE_FIX"]
+    for mod_format in mod_formats[2:]:
+        for loss_func in loss_funcs_fcn[0:1]:
+            path_fcn = f"/Users/diegofigueroa/Desktop/results2/{loss_func}/{mod_format}_0"
+            for L_link in L_link_steps[2:3]:
+                for SNR in SNR_dB_steps:
+                    path = f"{path_fcn}/progress_lr0p004_Llink{L_link:.0f}km_alpha0p0_{SNR:.0f}dB.txt"
+                    progress_data = read_progress_file(path)
+                    plot_all_progress(progress_data, f"{mod_format} -- {loss_func} -- Link length: {L_link} km -- SNR: {SNR} dB")
         
