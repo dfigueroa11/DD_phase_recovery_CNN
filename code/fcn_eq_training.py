@@ -53,7 +53,7 @@ def checkpoint_tasks(y: torch.Tensor, u: torch.Tensor, fcn_out: torch.Tensor, ba
     u = u[:,u.shape[-1]//2]
     u_hat = fcn_out_2_u_hat(fcn_out, torch.abs(u), dd_system)
     SERs = perf_met.get_all_SERs(u, u_hat, dd_system, SNR_dB)
-    scheduler.step(sum(SERs))
+    if use_scheduler: scheduler.step(sum(SERs))
     curr_lr = scheduler.get_last_lr()
     MI = perf_met.get_MI_HD(u, u_hat, dd_system, SNR_dB)
     io_tool.print_progress(batch_size, progress, curr_lr, loss, SERs, MI)
@@ -116,7 +116,7 @@ fcn_out_2_u_hat = fcn_ph.fcn_out_2_u_hat_funcs[train_type]
 batches_per_epoch = 300
 batch_size_per_epoch = [50_000, 100_000, 200_000]
 lr = 0.004
-
+use_scheduler = False
 checkpoint_per_epoch = 100
 save_progress = True
 
