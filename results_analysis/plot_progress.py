@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
+from matplotlib.backends.backend_pdf import PdfPages
 
 def read_progress_file(path):
     return np.loadtxt(path, delimiter=",", skiprows=1)
@@ -33,7 +34,7 @@ def plot_all_progress(progress_data, title):
     plot_progress(axs[1,1], progress_data[:,-1], reference_lines=batch_size_change, reference_labels=batch_size_change_labels)
     axs[1,1].set_ylabel("Mutual information [bpcu]")
     axs[1,1].legend()
-    plt.show()
+    return fig
 
 
 
@@ -41,14 +42,23 @@ if __name__=="__main__":
     L_link_steps = np.arange(0,35,6)
     SNR_dB_steps = np.arange(-5, 12, 2)
     mod_formats = ["ASK2","ASK4","QAM4"]
-    save_fig = False
+    save_fig = True
     loss_funcs_fcn = ["TRAIN_CE", "TRAIN_MSE", "TRAIN_MSE_PHASE_FIX"]
-    for mod_format in mod_formats[2:]:
-        for loss_func in loss_funcs_fcn[0:1]:
-            path_fcn = f"/Users/diegofigueroa/Desktop/results2/{loss_func}/{mod_format}_0"
-            for L_link in L_link_steps[2:3]:
+    fold_num = 2
+
+    pdf = PdfPages(f"progress_{fold_num}.pdf") if save_fig else None
+    for mod_format in mod_formats:
+        for loss_func in loss_funcs_fcn:
+            path_fcn = f"/Users/diegofigueroa/Desktop/results{fold_num}/{loss_func}/{mod_format}_0"
+            for L_link in L_link_steps:
                 for SNR in SNR_dB_steps:
+                    print(f"{mod_format} -- {loss_func} -- {L_link}km -- {SNR}dB   ", end='\r')
                     path = f"{path_fcn}/progress_lr0p004_Llink{L_link:.0f}km_alpha0p0_{SNR:.0f}dB.txt"
                     progress_data = read_progress_file(path)
                     plot_all_progress(progress_data, f"{mod_format} -- {loss_func} -- Link length: {L_link} km -- SNR: {SNR} dB")
-        
+                    if save_fig:
+                        pdf.savefig()
+                        plt.close()
+                    else:
+                        plt.show()
+    if save_fig: pdf.close()

@@ -128,7 +128,8 @@ def plot_FCN_CNN_Plabst_comparison(paths, mod_format, labels, MI_plot=True, SER_
 if __name__=="__main__":
     mod_formats = ["ASK2","ASK4","QAM4"]
     path = "/Users/diegofigueroa/Desktop/KIT/HiWi/results_cnn_vs_Plabst_2/txt/results_post_processing"
-    save_fig = False
+    save_fig = True
+    fold_num = 6
     loss_funcs = ["TRAIN_MSE_U_MAG_PHASE",
                   "TRAIN_MSE_U_MAG_PHASE_PHASE_FIX",
                   "TRAIN_MSE_U_SLDMAG_PHASE",
@@ -143,14 +144,14 @@ if __name__=="__main__":
     labels_cnn = [f"{loss_func[6:]}" for loss_func  in loss_funcs[:-1]]+loss_funcs[-1:]
     labels_fcn = [f"{loss_func[6:]}" for loss_func  in loss_funcs_fcn]
     labels_plabst = ["SIC 4", "SDD"]
-    pdf = PdfPages(f"big_comparison.pdf") if save_fig else None
+    pdf = PdfPages(f"big_comparison{fold_num}.pdf") if save_fig else None
 
 
     for mod_format, loss_funcs_selector in zip(mod_formats, loss_funcs_selectors):
         paths_cnn = [f"{path}/{loss_funcs[loss_idx]}/{mod_format}/{file_name}" for loss_idx in loss_funcs_selector]
         lab_cnn = [labels_cnn[loss_idx] for loss_idx in loss_funcs_selector]
         path_plabst = f"/Users/diegofigueroa/Desktop/KIT/HiWi/results_cnn_vs_Plabst_2/txt/Plabst_results/{mod_format}.txt"
-        paths_fcn = [f"/Users/diegofigueroa/Desktop/results/{loss_func}/{mod_format}_0/{file_name}" for loss_func in loss_funcs_fcn]
+        paths_fcn = [f"/Users/diegofigueroa/Desktop/results{fold_num}/{loss_func}/{mod_format}_0/{file_name}" for loss_func in loss_funcs_fcn]
         plot_FCN_CNN_Plabst_comparison([paths_fcn, paths_cnn, path_plabst], mod_format, [labels_fcn, lab_cnn, labels_plabst], SER_plot=False, MI_plot=True, pdf=pdf)
     if save_fig:
         pdf.close()
