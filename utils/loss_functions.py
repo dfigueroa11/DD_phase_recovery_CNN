@@ -1,7 +1,7 @@
 import torch
 from torch.nn.functional import mse_loss, cross_entropy
 
-import data_conversion_tools as dconv_tools
+from . import data_conversion_tools as dconv_tools
 from comm_sys.DD_system import DD_system
 from nn_equalizers import cnn_equalizer, fcn_ph_equalizer
 

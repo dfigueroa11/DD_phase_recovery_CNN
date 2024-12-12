@@ -3,7 +3,7 @@ import torch
 import matplotlib.pyplot as plt
 from torch.nn.functional import conv1d
 
-from comm_sys.DD_system import DD_system
+import comm_sys.DD_system as DD_system
 from comm_sys import Differential_encoder
 
 def cascade_filters(filt_1: torch.Tensor, filt_2: torch.Tensor):
@@ -190,7 +190,7 @@ def set_up_DD_system(N_os: int, N_sim: int, device, **kwargs):
         rx_filt = rcos_filt(0, len(pulse_shape), N_sim, 1/2, dtype=torch.float32)
     else:
         rx_filt = torch.tensor([1.])
-    return DD_system(N_os, N_sim, constellation , diff_encoder, pulse_shape, ch_imp_resp, rx_filt, device)
+    return DD_system.DD_system(N_os, N_sim, constellation , diff_encoder, pulse_shape, ch_imp_resp, rx_filt, device)
 
 def common_constellation(mod: str, M: int, dtype=torch.cfloat, sqrt_flag: bool=False):
     '''Returns the constellation specified (1D tensor of size M)

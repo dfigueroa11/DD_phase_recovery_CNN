@@ -9,7 +9,7 @@ import argparse
 
 from nn_equalizers.cnn_equalizer import TRAIN_TYPES, TRAIN_CE_U_SYMBOLS
 from comm_sys.DD_system import DD_system
-from performance_metrics import get_alphabets
+from .performance_metrics import get_alphabets
 
 def create_folder(path: str,n_copy: int):
     '''Creates the folder specified by path, if it already exists append a number to the path and creates the folder'''
