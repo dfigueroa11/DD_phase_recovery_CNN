@@ -4,7 +4,7 @@ from torch.nn import MSELoss, Softmax
 
 import numpy as np
 
-from comm_sys.DD_system import DD_system
+import comm_sys.DD_system as DD_system
 from nn_equalizers import fcn_ph_equalizer
 import utils.help_functions as hlp
 import utils.performance_metrics as perf_met
@@ -54,7 +54,7 @@ def checkpoint_tasks(y: torch.Tensor, u: torch.Tensor, fcn_out: torch.Tensor, ba
     u_hat = fcn_out_2_u_hat(fcn_out, torch.abs(u), dd_system)
     SERs = perf_met.get_all_SERs(u, u_hat, dd_system, SNR_dB)
     if use_scheduler: scheduler.step(sum(SERs))
-    curr_lr = scheduler.get_last_lr()
+    curr_lr = scheduler.get_last_lr() if use_scheduler else [lr]
     MI = perf_met.get_MI_HD(u, u_hat, dd_system, SNR_dB)
     io_tool.print_progress(batch_size, progress, curr_lr, loss, SERs, MI)
     if save_progress:
