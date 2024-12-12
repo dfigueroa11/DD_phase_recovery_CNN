@@ -5,13 +5,14 @@ import matplotlib.pyplot as plt
 from time import sleep
 import numpy as np
 
-import help_functions as hlp
-import performance_metrics as perf_met
-import in_out_tools as io_tool
-from DD_system import DD_system
-import cnn_equalizer
-from loss_functions import loss_funcs_cnn
-from complexity_tools import design_CNN_structures_fix_comp2
+from comm_sys.DD_system import DD_system
+from nn_equalizers import cnn_equalizer
+import utils.help_functions as hlp
+import utils.performance_metrics as perf_met
+import utils.in_out_tools as io_tool
+from utils.loss_functions import loss_funcs_cnn
+from utils.complexity_tools import design_CNN_structures_fix_comp2
+
 
 def initialize_dd_system():
     return hlp.set_up_DD_system(N_os=N_os, N_sim=N_sim, device=device,

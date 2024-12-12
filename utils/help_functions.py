@@ -1,15 +1,10 @@
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-import matplotlib.axes as axes
-
 from torch.nn.functional import conv1d
-from sklearn.metrics import mutual_info_score
 
-
-from DD_system import DD_system
-import Differential_encoder
-import data_conversion_tools as dconv_tools
+from comm_sys.DD_system import DD_system
+from comm_sys import Differential_encoder
 
 def cascade_filters(filt_1: torch.Tensor, filt_2: torch.Tensor):
     '''combine 2 filters by multiplication in frequency domain

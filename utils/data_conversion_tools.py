@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 
-from DD_system import DD_system
+from comm_sys.DD_system import DD_system
 
 ############### CNN ###############
 def mag_phase_2_complex(x: torch.Tensor, dd_system: DD_system, **kwargs):

@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
-import data_conversion_tools as dconv_tools
+import utils.data_conversion_tools as dconv_tools
 
-from complexity_tools import calc_multi_layer_FCN_complexity
+from utils.complexity_tools import calc_multi_layer_FCN_complexity
 
 TRAIN_MSE = 0
 TRAIN_MSE_PHASE_FIX = 1

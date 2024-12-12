@@ -4,13 +4,13 @@ from torch.nn import MSELoss, Softmax
 
 import numpy as np
 
-import help_functions as hlp
-import performance_metrics as perf_met
-import in_out_tools as io_tool
-from data_conversion_tools import reshape_data_for_FCN
-from DD_system import DD_system
-import fcn_ph
-from loss_functions import loss_funcs_fcn
+from comm_sys.DD_system import DD_system
+from nn_equalizers import fcn_ph_equalizer
+import utils.help_functions as hlp
+import utils.performance_metrics as perf_met
+import utils.in_out_tools as io_tool
+from utils.loss_functions import loss_funcs_fcn
+from utils.data_conversion_tools import reshape_data_for_FCN
 
 def initialize_dd_system():
     return hlp.set_up_DD_system(N_os=N_os, N_sim=N_sim, device=device,
@@ -21,9 +21,9 @@ def initialize_dd_system():
                                 L_link=L_link, R_sym=R_sym, beta2=beta2)
 
 def initialize_FCN_optimizer(lr):
-    m = dd_system.phase_list.numel() if train_type == fcn_ph.TRAIN_CE else 1
-    activ_func_last_layer = Softmax(dim=1) if train_type == fcn_ph.TRAIN_CE else None
-    fcn_eq = fcn_ph.FCN_ph(y_len, a_len, fcn_out_sym, m, hidden_layers_len, layer_is_bilinear, activ_func, activ_func_last_layer)
+    m = dd_system.phase_list.numel() if train_type == fcn_ph_equalizer.TRAIN_CE else 1
+    activ_func_last_layer = Softmax(dim=1) if train_type == fcn_ph_equalizer.TRAIN_CE else None
+    fcn_eq = fcn_ph_equalizer.FCN_ph(y_len, a_len, fcn_out_sym, m, hidden_layers_len, layer_is_bilinear, activ_func, activ_func_last_layer)
     fcn_eq.to(device)
     optimizer = optim.Adam(fcn_eq.parameters(), eps=1e-07, lr=lr)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5)
@@ -83,7 +83,7 @@ def eval_n_save_CNN():
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("We are using the following device for learning:",device)
 
-args = io_tool.process_args(fcn_ph.TRAIN_TYPES)
+args = io_tool.process_args(fcn_ph_equalizer.TRAIN_TYPES)
 ### System definition
 N_os = 2
 N_sim = 2
@@ -99,8 +99,8 @@ L_link_steps = np.arange(0,35,6)*1e3      # for sweep over L_link
 L_link_save_fig = L_link_steps[[0,2,-1]]
 SNR_dB_steps = np.arange(-5, 12, 2)                          # for sweep over SNR
 SNR_save_fig = SNR_dB_steps[[0,5,-2,-1]]
-train_type = list(fcn_ph.TRAIN_TYPES.keys())[args.loss_func]
-train_type_name = fcn_ph.TRAIN_TYPES[train_type]
+train_type = list(fcn_ph_equalizer.TRAIN_TYPES.keys())[args.loss_func]
+train_type_name = fcn_ph_equalizer.TRAIN_TYPES[train_type]
 
 ### FCN definition
 y_len = 30*N_os
@@ -110,7 +110,7 @@ hidden_layers_len = [20,10]
 layer_is_bilinear = [False]*3
 activ_func = torch.nn.ELU()
 loss_func = loss_funcs_fcn[train_type]
-fcn_out_2_u_hat = fcn_ph.fcn_out_2_u_hat_funcs[train_type]
+fcn_out_2_u_hat = fcn_ph_equalizer.fcn_out_2_u_hat_funcs[train_type]
 
 ### Training hyperparameter
 batches_per_epoch = 300

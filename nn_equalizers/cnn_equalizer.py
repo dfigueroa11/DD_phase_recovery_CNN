@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-import data_conversion_tools as dconv_tools
-from complexity_tools import calc_multi_layer_CNN_complexity
+import utils.data_conversion_tools as dconv_tools
+from utils.complexity_tools import calc_multi_layer_CNN_complexity
 
 TRAIN_MSE_U_SYMBOLS = 0
 TRAIN_MSE_U_MAG_PHASE = 1

@@ -7,8 +7,8 @@ from matplotlib import gridspec
 from matplotlib.lines import Line2D
 import argparse
 
-from cnn_equalizer import TRAIN_TYPES, TRAIN_CE_U_SYMBOLS
-from DD_system import DD_system
+from nn_equalizers.cnn_equalizer import TRAIN_TYPES, TRAIN_CE_U_SYMBOLS
+from comm_sys.DD_system import DD_system
 from performance_metrics import get_alphabets
 
 def create_folder(path: str,n_copy: int):

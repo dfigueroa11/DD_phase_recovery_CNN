@@ -3,7 +3,7 @@ import torch
 
 from sklearn.metrics import mutual_info_score
 
-from DD_system import DD_system
+from comm_sys.DD_system import DD_system
 
 
 def min_distance_dec(Rx: torch.Tensor, alphabet: torch.Tensor):

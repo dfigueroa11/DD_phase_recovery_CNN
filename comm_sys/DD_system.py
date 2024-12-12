@@ -1,6 +1,6 @@
 import torch
 
-import help_functions as hlp
+import utils.help_functions as hlp
 
 
 class DD_system():

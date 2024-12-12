@@ -1,8 +1,5 @@
 import torch
 
-import help_functions as hlp
-import matplotlib.pyplot as plt
-
 class Differential_encoder():
     '''
     Class implementing the differential encoder
