@@ -25,9 +25,10 @@ class RNNRX(jit.ScriptModule):
         super().__init__()
         self.dev = dev  # Save device
         self.mult_BIRNN = 2
+        self.N_tv_cells = N_tv_cells
         self.TVRNN_layers = nn.ModuleList()  # Variable layer list
         for hidden_sz in hidden_states_size:
-            self.TVRNN_layers.append(TVRNN(input_size, hidden_sz, N_tv_cells, dev))
+            self.TVRNN_layers.append(TVRNN(input_size, hidden_sz, self.N_tv_cells, dev))
             # Mult x 2 for next input dimension, because bidirectional RNN concatenates two previous output vectors
             input_size = hidden_sz * self.mult_BIRNN
     
@@ -38,6 +39,8 @@ class RNNRX(jit.ScriptModule):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         for TVRNN_layer in self.TVRNN_layers:
             x = TVRNN_layer(x)
+        # apply the lin layer only to the s-th stage ass in the papper
+        # out = self.Lin_layer(x[:,::self.N_tv_cells,:]) 
         out = x.contiguous().view(-1, self.lin_layer_in)
         out = self.Lin_layer(out)
         return out
