@@ -252,3 +252,16 @@ def common_diff_encoder(mod: str, constellation: torch.Tensor, device):
     else:
         raise ValueError("mod should be PAM, ASK, SQAM, QAM or DDQAM")
     return Differential_encoder.Differential_encoder(constellation, diff_mapping, device)
+
+def find_normalization_constants(dd_system: DD_system.DD_system, SNR_dB: float):
+    n_norm = int(20e3)
+    _, _, _, tmp_y = dd_system.simulate_transmission(1, n_norm, SNR_dB)
+    y_mean = tmp_y.mean()
+    y_var = tmp_y.var()
+    SNR_lin = torch.tensor([10**(SNR_dB/10)], device=dd_system.device, dtype=torch.float32)
+    x_mean = torch.mean(SNR_lin * dd_system.constellation)
+    x_var = torch.var(SNR_lin * dd_system.constellation)
+    return y_mean, y_var, x_mean, x_var
+
+def norm_unit_var(x: torch.Tensor, mean: torch.Tensor, var: torch.Tensor):
+    return (x - mean) / torch.sqrt(var)

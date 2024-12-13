@@ -3,6 +3,9 @@ import torch.jit as jit
 from torch import nn
 from typing import List
 
+TRAIN_CE = 0
+TRAIN_TYPES = {TRAIN_CE: "TRAIN_CE"}
+
 ############ code adapted from https://github.com/DPlabst/NN-MI
 # 
 # * ------ Time-varying recurrent neural network class ----------

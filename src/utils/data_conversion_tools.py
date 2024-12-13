@@ -112,3 +112,10 @@ def MSE_FCN_out_2_complex(fcn_out: torch.Tensor, a: torch.Tensor, dd_system: DD_
 
 def CE_FCN_out_2_complex(fcn_out: torch.Tensor, a: torch.Tensor, dd_system: DD_system):
     return a*torch.exp(1j*dd_system.phase_list[fcn_out.argmax(dim=-1)]).detach().cpu()
+
+############### RNN ###############
+def gen_idx_mat_inputs(n_sym, n_os, L_y, num_SIC_stages):
+    idx_mat_SIC_block = torch.arange(0, n_sym*n_os, n_os, dtype=torch.int64).reshape(-1,num_SIC_stages,1)
+    L_y_range = torch.arange(L_y) - (L_y-1)//2
+    idx_mat_y_inputs = torch.remainder(idx_mat_SIC_block+L_y_range,n_sym*n_os)
+    return idx_mat_y_inputs
