@@ -80,7 +80,7 @@ def get_MI_HD(u: torch.Tensor, u_hat: torch.Tensor, dd_system: DD_system, Ptx_dB
     u_hat_idx, _ = min_distance_dec(u_hat.flatten(), constellation)
     return mutual_info_score(u_hat_idx, u_idx)/np.log(2)
 
-def get_MI_SD(u_idx:np.ndarray, APPs:np.ndarray):
+def get_MI_SD(u:np.ndarray, APPs:np.ndarray, dd_system: DD_system, Ptx_dB: float):
     ''' Calculates the mutual information between u_idx and APPs
 
     Arguments:
@@ -90,5 +90,7 @@ def get_MI_SD(u_idx:np.ndarray, APPs:np.ndarray):
     Returns:
     mutual information
     '''
-    p_t = np.array([np.mean(u_idx==i) for i in range(APPs.shape[-1])])
-    return np.mean(np.log2(np.take_along_axis(APPs,u_idx[:,None],-1)).squeeze() - np.log2(np.sum(APPs*p_t,axis=-1)))
+    _, _, constellation = get_alphabets(dd_system, Ptx_dB)
+    u_idx, _ = min_distance_dec(u, constellation)
+    p_t = np.array([np.mean(u_idx.numpy()==i) for i in range(APPs.shape[1])])
+    return np.mean(np.log2(np.take_along_axis(APPs.numpy(),u_idx.numpy(),1)).squeeze() - np.log2(np.sum(APPs.numpy()*p_t[...,None],axis=1)))

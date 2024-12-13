@@ -34,7 +34,7 @@ def initialize_CNN_optimizer(lr):
         num_ch_aux = np.append(num_ch_aux,M)
         strides_aux = np.append(strides_aux,1)
         ker_lens_aux = np.append(ker_lens_aux, 7)
-        activ_func_last_layer = Softmax(dim=1)
+        # activ_func_last_layer = Softmax(dim=1)
     cnn_eq = cnn_equalizer.CNN_equalizer(num_ch_aux, ker_lens_aux, strides_aux, activ_func, groups_list, activ_func_last_layer)
     cnn_eq.to(device)
     optimizer = optim.Adam(cnn_eq.parameters(), eps=1e-07, lr=lr)
@@ -54,6 +54,7 @@ def train_CNN(loss_function):
             optimizer.step()
             optimizer.zero_grad()
             if (i+1)%(batches_per_epoch//checkpoint_per_epoch) == 0:
+                cnn_out = torch.nn.functional.softmax(cnn_out, dim=1)
                 checkpoint_tasks(y, u.detach().cpu(), cnn_out.detach().cpu(), batch_size, (i+1)/batches_per_epoch, loss.detach().cpu().numpy())
         print()
 
@@ -62,7 +63,7 @@ def checkpoint_tasks(y, u, cnn_out, batch_size, progress, loss):
     SERs = perf_met.get_all_SERs(u, u_hat, dd_system, SNR_dB)
     scheduler.step(sum(SERs))
     curr_lr = scheduler.get_last_lr()
-    MI = perf_met.get_MI_HD(u, u_hat, dd_system, SNR_dB)
+    MI = perf_met.get_MI_SD(u, cnn_out, dd_system, SNR_dB)
     io_tool.print_progress(batch_size, progress, curr_lr, loss, SERs, MI)
     if save_progress:
         io_tool.save_progress(progress_file_path, batch_size, progress, curr_lr, loss, SERs, MI)
@@ -70,12 +71,12 @@ def checkpoint_tasks(y, u, cnn_out, batch_size, progress, loss):
 def eval_n_save_CNN():
     _, u, _, y = dd_system.simulate_transmission(100, N_sym, SNR_dB)
     cnn_eq.eval()
-    cnn_out = cnn_eq(y).detach().cpu()
+    cnn_out = torch.nn.functional.softmax(cnn_eq(y).detach().cpu(),dim=1)
 
     u_hat = cnn_out_2_u_hat(cnn_out, dd_system, Ptx_dB=SNR_dB)
     u = u.detach().cpu()
     SERs = perf_met.get_all_SERs(u, u_hat, dd_system, SNR_dB)
-    MI = perf_met.get_MI_HD(u, u_hat, dd_system, SNR_dB)
+    MI = perf_met.get_MI_SD(u, cnn_out, dd_system, SNR_dB)
 
     io_tool.print_save_summary(f"{folder_path}/results.txt", lr, L_link, alpha, SNR_dB, SERs, MI)
 
@@ -107,9 +108,9 @@ SNR_save_fig = SNR_dB_steps[[0,5,-2,-1]]
 train_type = list(cnn_equalizer.TRAIN_TYPES.keys())[args.loss_func]
 train_type_name = cnn_equalizer.TRAIN_TYPES[train_type]
 ### CNN definition
-num_ch = np.array([1,15,30,15,7,3,1])
-ker_lens = np.array([31,21,17,11,7,5])
-strides = np.array([1,1,1,1,1,2])
+num_ch = np.array([1,15,7,1])
+ker_lens = np.array([11,11,7])
+strides = np.array([1,1,2])
 activ_func = torch.nn.ELU()
 loss_func = loss_funcs_cnn[train_type]
 cnn_out_2_u_hat = cnn_equalizer.cnn_out_2_u_hat_funcs[train_type]
