@@ -1,3 +1,4 @@
+from math import ceil 
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -263,3 +264,15 @@ def find_normalization_constants(y: torch.Tensor, constellation: torch.Tensor, S
 
 def norm_unit_var(x: torch.Tensor, mean: torch.Tensor, var: torch.Tensor):
     return (x - mean) / torch.sqrt(var)
+
+def calculate_effective_train_params(N_tv_cells, num_SIC_stages, T_rnn_raw, batch_size):
+    T_rnn = ceil(T_rnn_raw /N_tv_cells) *N_tv_cells
+    n_sc = num_SIC_stages * T_rnn  # Blocklength n needs to be integer divisible by n_sc
+    n_sym = batch_size * T_rnn  # Number of TX symbols for training
+    # Keep training data constant per SIC stage.
+    # Example: When training with blocklength n and S_SIC = 3,
+    # cur_SIC = 2 uses only 2/3 of n for training. We rescale for this loss.
+    sc_y_eff = num_SIC_stages/N_tv_cells
+    # Make sure we have integer fractions after creating RNN input tensors
+    n_sym = int((sc_y_eff * n_sym) // n_sc * n_sc)
+    return T_rnn, n_sym
