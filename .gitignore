@@ -9,7 +9,7 @@ __pycache__/
 .vscode
 
 # replace script 
-/results
+/src/results[0-9]/
 # C extensions
 *.so
 
