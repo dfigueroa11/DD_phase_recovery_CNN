@@ -35,17 +35,17 @@ class RNNRX(jit.ScriptModule):
             # Mult x 2 for next input dimension, because bidirectional RNN concatenates two previous output vectors
             input_size = hidden_sz * self.mult_BIRNN
     
-        self.lin_layer_in = input_size
+        self.lin_layer_in = int(input_size)
         self.Lin_layer = nn.Linear(self.lin_layer_in, output_size)
 
-    @jit.script_method
+    # @jit.script_method
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         for TVRNN_layer in self.TVRNN_layers:
             x = TVRNN_layer(x)
         # apply the lin layer only to the s-th stage ass in the papper
-        # out = self.Lin_layer(x[:,::self.N_tv_cells,:]) 
-        out = x.contiguous().view(-1, self.lin_layer_in)
-        out = self.Lin_layer(out)
+        out = self.Lin_layer(x[:,::self.N_tv_cells,:]) 
+        # out = x.contiguous().view(-1, self.lin_layer_in)
+        # out = self.Lin_layer(out)
         return out
 
 # * ------------------ Time-Varying RNN Layer ---------------------
@@ -67,7 +67,7 @@ class TVRNN(jit.ScriptModule):
         self.cells_fw = nn.ModuleList([CRNNCell(self.input_size, self.hidden_size, self.dev) for count in range(self.N_tv_cells)])
         self.cells_bw = nn.ModuleList([CRNNCell(self.input_size, self.hidden_size, self.dev) for count in range(self.N_tv_cells)])
             
-    @jit.script_method
+    # @jit.script_method
     def recurFW(self, x: torch.Tensor) -> torch.Tensor:
         # Input dim(x) = nBatch x N_Trnn x Nin
         # Initialize state with uniform random numbers
@@ -84,7 +84,7 @@ class TVRNN(jit.ScriptModule):
         # Because formerly, we unbound dim=1 (Trnn)
         return torch.stack(outputs, dim=1)
 
-    @jit.script_method
+    # @jit.script_method
     def recurBW(self, x: torch.Tensor) -> torch.Tensor:
         # Initialize with uniform random numbers
         # [https://pytorch.org/docs/stable/generated/torch.nn.RNN.html]
@@ -100,7 +100,7 @@ class TVRNN(jit.ScriptModule):
         # Because formerly, we unbound dim=1 (Trnn)
         return torch.stack(reverse(outputs), dim=1)
 
-    @jit.script_method
+    # @jit.script_method
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         ## Parallelize FW and BW path, as they are independent
         # [https://pytorch.org/tutorials/advanced/torch-script-parallelism.html]
@@ -126,7 +126,7 @@ class CRNNCell(jit.ScriptModule):
         self.Lin_layer_input_to_hidden = nn.Linear(input_size, hidden_size, device=dev)
         self.Lin_layer_hidden_to_hidden = nn.Linear(hidden_size, hidden_size, device=dev)
 
-    @jit.script_method
+    # @jit.script_method
     def forward(self, input: torch.Tensor, hx: torch.Tensor) -> torch.Tensor:
         hx = self.Lin_layer_input_to_hidden(input) + self.Lin_layer_hidden_to_hidden(hx)
         return torch.relu(hx)
