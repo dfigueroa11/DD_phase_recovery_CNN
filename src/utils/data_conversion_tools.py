@@ -114,8 +114,21 @@ def CE_FCN_out_2_complex(fcn_out: torch.Tensor, a: torch.Tensor, dd_system: DD_s
     return a*torch.exp(1j*dd_system.phase_list[fcn_out.argmax(dim=-1)]).detach().cpu()
 
 ############### RNN ###############
-def gen_idx_mat_inputs(n_sym, n_os, L_y, num_SIC_stages):
-    idx_mat_SIC_block = torch.arange(0, n_sym*n_os, n_os, dtype=torch.int64).reshape(-1,num_SIC_stages,1)
+def gen_idx_mat_inputs(n_sym, n_os, L_y, L_ic, num_SIC_stages, sim_stage):
+    SIC_block_mat = torch.arange(0, n_sym*n_os, n_os, dtype=torch.int64).reshape(-1,num_SIC_stages,1)
     L_y_range = torch.arange(L_y) - (L_y-1)//2
-    idx_mat_y_inputs = torch.remainder(idx_mat_SIC_block+L_y_range,n_sym*n_os)
-    return idx_mat_y_inputs
+    idx_mat_y_inputs = torch.remainder(SIC_block_mat+L_y_range,n_sym*n_os)[:,sim_stage-1:]
+
+    if sim_stage == 1:
+        return idx_mat_y_inputs, torch.tensor([]).reshape(idx_mat_y_inputs.size(0),idx_mat_y_inputs.size(1),0)
+    
+    SIC_block_mat = torch.arange(-n_sym, n_sym, dtype=torch.int64).reshape(-1,num_SIC_stages)
+    known_sym_vec = SIC_block_mat[:,:sim_stage-1].reshape(-1,1)
+    distance_to_known_sym = torch.abs(known_sym_vec - torch.arange(sim_stage-1, num_SIC_stages)) # for each unknown symbol
+    idx_L_ic_closest_distances = torch.argsort(distance_to_known_sym, dim=0)[:L_ic]
+    closest_known_sym,_ = torch.sort(torch.take_along_dim(known_sym_vec, idx_L_ic_closest_distances, dim=0), dim=0)
+    position_rel_to_unknown_sym = closest_known_sym - torch.arange(sim_stage-1, num_SIC_stages)
+    unknown_sym_mat = torch.arange(n_sym, dtype=torch.int64).reshape(-1,num_SIC_stages,1)[:,sim_stage-1:]
+    idx_mat_x_inputs = torch.remainder(unknown_sym_mat+position_rel_to_unknown_sym.T,n_sym)
+    return idx_mat_y_inputs, idx_mat_x_inputs
+

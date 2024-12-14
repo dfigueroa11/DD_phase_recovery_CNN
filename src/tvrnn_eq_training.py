@@ -89,7 +89,7 @@ num_frame_sched_velidation = 1
 folder_path = io_tool.create_folder(f"results2/{train_type_name}/{mod_format}{M:}",0)
 io_tool.init_summary_file(f"{folder_path}/results.txt")
 
-idx_mat_y_inputs, idx_mat_x_inputs = data_conv_tools.gen_idx_mat_inputs()
+idx_mat_y_inputs, idx_mat_x_inputs = data_conv_tools.gen_idx_mat_inputs(80, 2, 10, 10, 4, 3)
 
 for L_link in L_link_steps:
     for SNR_dB in SNR_dB_steps:
