@@ -1,6 +1,7 @@
 import torch
 import torch.optim as optim
 from torch.nn import MSELoss, Softmax
+from torch.nn.functional import cross_entropy
 import numpy as np
 
 import comm_sys.DD_system as DD_system
@@ -26,7 +27,22 @@ def initialize_RNN_optimizer(lr):
     return rnn_eq, optimizer, scheduler
 
 def train_rnn():
-    pass
+    rnn_eq.train()
+    for i in range(max_num_epochs):
+        idx_u, _, x, y = dd_system.simulate_transmission(1, n_sym, SNR_dB)
+        x = hlp.norm_unit_var(x, x_mean, x_var)
+        y = hlp.norm_filt(y, y_mean, y_var)
+        rnn_inputs = data_conv_tools.gen_rnn_inputs(x, y, idx_mat_x_inputs, idx_mat_y_inputs, complex_mod)
+        u_hat_soft = rnn_eq(rnn_inputs.reshape(-1, T_rnn, input_size)).flatten(0,-2)
+        
+        idx_u_sic = idx_u.flatten()
+        if sim_stage != 1:
+            idx_u_sic = idx_u_sic[sim_stage-1::num_SIC_stages]
+        
+        loss = cross_entropy(input=u_hat_soft, target=idx_u_sic)
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
 
 def eval_n_save_rnn():
     pass
@@ -80,21 +96,28 @@ N_tv_cells = 1 if sim_stage == 1 else num_SIC_stages - sim_stage + 1
 # NN Training parameters
 lr = 0.02
 T_rnn_raw = 36
-batch_size = 512
-max_num_epochs_training = 30000
+batch_size_raw = 512
+max_num_epochs = 30000
 num_frame_validation = 100
 num_epochs_before_sched = 100
 num_frame_sched_velidation = 1
+T_rnn, n_sym = hlp.calculate_effective_train_params(N_tv_cells, num_SIC_stages, T_rnn_raw, batch_size_raw)
+batch_size = n_sym//T_rnn
+# matrices to take the inputs 
+idx_mat_y_inputs, idx_mat_x_inputs = data_conv_tools.gen_idx_mat_inputs(n_sym, N_os, L_y, L_ic, num_SIC_stages, sim_stage)
 
 folder_path = io_tool.create_folder(f"results2/{train_type_name}/{mod_format}{M:}",0)
 io_tool.init_summary_file(f"{folder_path}/results.txt")
 
-idx_mat_y_inputs, idx_mat_x_inputs = data_conv_tools.gen_idx_mat_inputs(80, 2, 10, 10, 4, 3)
+
 
 for L_link in L_link_steps:
     for SNR_dB in SNR_dB_steps:
         dd_system = initialize_dd_system()
-        y_mean, y_var, x_mean, x_var = hlp.find_normalization_constants(dd_system, SNR_dB)
+        _, _, _, y = dd_system.simulate_transmission(1, int(100e3), SNR_dB)
+        y_mean, y_var, x_mean, x_var = hlp.find_normalization_constants(y, dd_system.constellation, SNR_dB)
         rnn_eq, optimizer, scheduler = initialize_RNN_optimizer(lr)
         train_rnn()
         eval_n_save_rnn()
+        break
+    break
