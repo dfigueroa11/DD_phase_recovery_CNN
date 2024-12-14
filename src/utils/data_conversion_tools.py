@@ -120,7 +120,7 @@ def gen_idx_mat_inputs(n_sym, n_os, L_y, L_ic, num_SIC_stages, sim_stage):
     idx_mat_y_inputs = torch.remainder(SIC_block_mat+L_y_range,n_sym*n_os)[:,sim_stage-1:]
 
     if sim_stage == 1:
-        return idx_mat_y_inputs, torch.tensor([]).reshape(idx_mat_y_inputs.size(0),idx_mat_y_inputs.size(1),0)
+        return idx_mat_y_inputs.to(torch.int64), torch.tensor([], dtype=torch.int64).reshape(idx_mat_y_inputs.size(0),idx_mat_y_inputs.size(1),0)
     
     SIC_block_mat = torch.arange(-n_sym, n_sym, dtype=torch.int64).reshape(-1,num_SIC_stages)
     known_sym_vec = SIC_block_mat[:,:sim_stage-1].reshape(-1,1)
@@ -130,5 +130,11 @@ def gen_idx_mat_inputs(n_sym, n_os, L_y, L_ic, num_SIC_stages, sim_stage):
     position_rel_to_unknown_sym = closest_known_sym - torch.arange(sim_stage-1, num_SIC_stages)
     unknown_sym_mat = torch.arange(n_sym, dtype=torch.int64).reshape(-1,num_SIC_stages,1)[:,sim_stage-1:]
     idx_mat_x_inputs = torch.remainder(unknown_sym_mat+position_rel_to_unknown_sym.T,n_sym)
-    return idx_mat_y_inputs, idx_mat_x_inputs
+    return idx_mat_y_inputs.to(torch.int64), idx_mat_x_inputs.to(torch.int64)
 
+def gen_rnn_inputs(x, y, idx_mat_x, idx_mat_y, complex_mod):
+    rnn_y_input = torch.take(y, idx_mat_y)
+    rnn_x_input = torch.take(x,idx_mat_x)
+    if complex_mod:
+        return torch.cat((rnn_y_input, rnn_x_input.real, rnn_x_input.imag), dim=-1)
+    return torch.cat((rnn_y_input, rnn_x_input.real), dim=-1)
