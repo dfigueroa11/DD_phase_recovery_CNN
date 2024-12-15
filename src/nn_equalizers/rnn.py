@@ -42,10 +42,7 @@ class RNNRX(jit.ScriptModule):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         for TVRNN_layer in self.TVRNN_layers:
             x = TVRNN_layer(x)
-        # apply the lin layer only to the s-th stage ass in the papper
         out = self.Lin_layer(x[:,::self.N_tv_cells,:]) 
-        # out = x.contiguous().view(-1, self.lin_layer_in)
-        # out = self.Lin_layer(out)
         return out
 
 # * ------------------ Time-Varying RNN Layer ---------------------
