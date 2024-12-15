@@ -114,25 +114,25 @@ def CE_FCN_out_2_complex(fcn_out: torch.Tensor, a: torch.Tensor, dd_system: DD_s
     return a*torch.exp(1j*dd_system.phase_list[fcn_out.argmax(dim=-1)]).detach().cpu()
 
 ############### RNN ###############
-def gen_idx_mat_inputs(n_sym, n_os, L_y, L_ic, num_SIC_stages, sim_stage):
+def gen_idx_mat_inputs(n_sym, n_os, L_y, L_ic, num_SIC_stages, curr_stage):
     SIC_block_mat = torch.arange(0, n_sym*n_os, n_os, dtype=torch.int64).reshape(-1,num_SIC_stages,1)
     L_y_range = torch.arange(L_y) - (L_y-1)//2
-    idx_mat_y_inputs = torch.remainder(SIC_block_mat+L_y_range,n_sym*n_os)[:,sim_stage-1:]
+    idx_mat_y_inputs = torch.remainder(SIC_block_mat+L_y_range,n_sym*n_os)[:,curr_stage-1:]
 
-    if sim_stage == 1:
+    if curr_stage == 1:
         return idx_mat_y_inputs.to(torch.int64), torch.tensor([], dtype=torch.int64).reshape(idx_mat_y_inputs.size(0),idx_mat_y_inputs.size(1),0)
     
     SIC_block_mat = torch.arange(-n_sym, n_sym, dtype=torch.int64).reshape(-1,num_SIC_stages)
-    pos_known_sym_rel_to_unknown_sym = SIC_block_mat[:,:sim_stage-1].reshape(-1,1) - torch.arange(sim_stage-1, num_SIC_stages)
+    pos_known_sym_rel_to_unknown_sym = SIC_block_mat[:,:curr_stage-1].reshape(-1,1) - torch.arange(curr_stage-1, num_SIC_stages)
     idx_L_ic_closest_known_sym = torch.argsort(torch.abs(pos_known_sym_rel_to_unknown_sym), dim=0)[:L_ic]
     rel_pos_closest_known_sym,_ = torch.sort(torch.take_along_dim(pos_known_sym_rel_to_unknown_sym, idx_L_ic_closest_known_sym, dim=0), dim=0)
-    unknown_sym_mat = SIC_block_mat[n_sym//num_SIC_stages:,sim_stage-1:,None]
+    unknown_sym_mat = SIC_block_mat[n_sym//num_SIC_stages:,curr_stage-1:,None]
     idx_mat_x_inputs = torch.remainder(unknown_sym_mat+rel_pos_closest_known_sym.T,n_sym)
     return idx_mat_y_inputs.to(torch.int64), idx_mat_x_inputs.to(torch.int64)
 
-def gen_rnn_inputs(x, y, idx_mat_x, idx_mat_y, complex_mod):
-    rnn_y_input = torch.take(y, idx_mat_y)
-    rnn_x_input = torch.take(x,idx_mat_x)
+def gen_rnn_inputs(x: torch.Tensor, y: torch.Tensor, idx_mat_x: torch.Tensor, idx_mat_y: torch.Tensor, complex_mod: bool):
+    rnn_y_input = y.take(idx_mat_y)
+    rnn_x_input = x.take(idx_mat_x)
     if complex_mod:
         return torch.cat((rnn_y_input, rnn_x_input.real, rnn_x_input.imag), dim=-1)
     return torch.cat((rnn_y_input, rnn_x_input.real), dim=-1)

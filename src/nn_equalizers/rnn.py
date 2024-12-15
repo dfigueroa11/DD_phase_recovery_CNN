@@ -40,9 +40,10 @@ class RNNRX(jit.ScriptModule):
 
     # @jit.script_method
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x shape: (batch_size, S-s+1, t_max, Hin)
         for TVRNN_layer in self.TVRNN_layers:
             x = TVRNN_layer(x)
-        out = self.Lin_layer(x[:,::self.N_tv_cells,:]) 
+        out = self.Lin_layer(x[:,0]) 
         return out
 
 # * ------------------ Time-Varying RNN Layer ---------------------
@@ -66,36 +67,32 @@ class TVRNN(jit.ScriptModule):
             
     # @jit.script_method
     def recurFW(self, x: torch.Tensor) -> torch.Tensor:
-        # Input dim(x) = nBatch x N_Trnn x Nin
+        # x shape: (batch_size, S-s+1, t_max, Hin)
         # Initialize state with uniform random numbers
         # [https://pytorch.org/docs/stable/generated/torch.nn.RNN.html]
         ksc = torch.sqrt(torch.tensor(1 / self.hidden_size))
         h = 2 * ksc * torch.rand(x.size(dim=0), self.hidden_size, device=self.dev) - ksc
-
-        inputs = x.unbind(dim=1)
-        outputs = torch.jit.annotate(List[torch.Tensor], [])
-        for i in range(len(inputs) // self.N_tv_cells):
-            for k, tvrnn_cell in enumerate(self.cells_fw):
-                h = tvrnn_cell(inputs[i * self.N_tv_cells + k], h)
-                outputs += [h]
-        # Because formerly, we unbound dim=1 (Trnn)
-        return torch.stack(outputs, dim=1)
-
+        out_size = (x.size(0), x.size(1), x.size(2), self.hidden_size)
+        outputs = torch.empty(out_size, dtype=x.dtype, layout=x.layout, device=x.device)
+        for t in range(x.size(dim=2)):
+            for s, tvrnn_cell in enumerate(self.cells_bw):
+                h = tvrnn_cell(x[:,s,t], h)
+                outputs[:,s,t] = h
+        return outputs
+    
     # @jit.script_method
     def recurBW(self, x: torch.Tensor) -> torch.Tensor:
         # Initialize with uniform random numbers
         # [https://pytorch.org/docs/stable/generated/torch.nn.RNN.html]
         ksc = torch.sqrt(torch.tensor(1 / self.hidden_size))
         h = 2 * ksc * torch.rand(x.size(dim=0), self.hidden_size, device=self.dev) - ksc
-
-        inputs = reverse(x.unbind(dim=1))  # Unbind Trnn
-        outputs = torch.jit.annotate(List[torch.Tensor], [])
-        for i in range(len(inputs) // self.N_tv_cells):
-            for k, tvrnn_cell in enumerate(self.cells_bw):
-                h = tvrnn_cell(inputs[i * self.N_tv_cells + k], h)
-                outputs += [h]
-        # Because formerly, we unbound dim=1 (Trnn)
-        return torch.stack(reverse(outputs), dim=1)
+        out_size = (x.size(0), x.size(1), x.size(2), self.hidden_size)
+        outputs = torch.empty(out_size, dtype=x.dtype, layout=x.layout, device=x.device)
+        for t in range(x.size(dim=2)):
+            for s, tvrnn_cell in enumerate(self.cells_bw):
+                h = tvrnn_cell(x[:,-(s+1),-(t+1)], h)
+                outputs[:,-(s+1),-(t+1)] = h
+        return outputs
 
     # @jit.script_method
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -111,7 +108,7 @@ class TVRNN(jit.ScriptModule):
         out_fw = torch.jit.wait(future_f)  # Wait for FW path to finish
 
         ## -- Return concatenated
-        return torch.cat((out_fw, out_bw), dim=2)
+        return torch.cat((out_fw, out_bw), dim=-1)
 
 # * ----------------------- Custom RNN Cell ---------------------
 # References for JIT; Code inspired by:

@@ -20,7 +20,7 @@ def initialize_dd_system():
                                 L_link=L_link, R_sym=R_sym, beta2=beta2)
 
 def initialize_RNN_optimizer(lr):
-    rnn_eq = rnn.RNNRX(input_size, hidden_states_size, output_size, N_tv_cells, device)
+    rnn_eq = rnn.RNNRX(input_size, hidden_states_size, output_size, unknown_stages, device)
     rnn_eq.to(device)
     optimizer = optim.Adam(rnn_eq.parameters(), eps=1e-07, lr=lr)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', factor=0.3)
@@ -29,14 +29,14 @@ def initialize_RNN_optimizer(lr):
 def train_rnn():
     rnn_eq.train()
     for i in range(max_num_epochs):
-        idx_u, _, x, y = dd_system.simulate_transmission(1, n_sym, SNR_dB)
+        idx_u, _, x, y = dd_system.simulate_transmission(1, n_sym_per_batch*batch_size, SNR_dB)
         x = hlp.norm_unit_var(x, x_mean, x_var)
         y = hlp.norm_unit_var(y, y_mean, y_var)
         rnn_inputs = data_conv_tools.gen_rnn_inputs(x, y, idx_mat_x_inputs, idx_mat_y_inputs, complex_mod)
-        u_hat_soft = rnn_eq(rnn_inputs.reshape(-1, T_rnn, input_size)).flatten(0,-2)
+        u_hat_soft = rnn_eq(rnn_inputs)
         
-        idx_u_sic = idx_u.flatten()[sim_stage-1::num_SIC_stages]
-        loss = cross_entropy(input=u_hat_soft, target=idx_u_sic)
+        idx_u_sic_curr_s = idx_u.reshape(batch_size, t_max, num_SIC_stages)[:,:,curr_stage-1]
+        loss = cross_entropy(input=u_hat_soft.permute(0,2,1), target=idx_u_sic_curr_s)
         loss.backward()
         optimizer.step()
         optimizer.zero_grad()
@@ -78,30 +78,36 @@ train_type = list(rnn.TRAIN_TYPES.keys())[args.loss_func]
 train_type_name = rnn.TRAIN_TYPES[train_type]
 
 ### SIC definition 
-num_SIC_stages = 4
-sim_stage = 1
-
+num_SIC_stages = 5
+curr_stage = 3
+known_stages = curr_stage-1
+unknown_stages = num_SIC_stages - known_stages
 ### TVRNN definition
 L_y = 32
 L_ic = 16
 eff_L_ic = L_ic*2 if complex_mod else L_ic
-input_size = L_y if sim_stage == 1 else L_y + eff_L_ic
+input_size = L_y if curr_stage == 1 else L_y + eff_L_ic
 hidden_states_size = np.array([32,])
 output_size = M
-N_tv_cells = num_SIC_stages - sim_stage + 1
 
 # NN Training parameters
 lr = 0.02
-T_rnn_raw = 36
-batch_size_raw = 512
+
+n_unknown_sym_raw = 36
+batch_size = 500
+n_unknown_sym, n_sym_per_batch = hlp.calculate_effective_train_params(unknown_stages, num_SIC_stages, n_unknown_sym_raw)
+t_max = n_unknown_sym//unknown_stages
+
 max_num_epochs = 30000
 num_frame_validation = 100
 num_epochs_before_sched = 100
 num_frame_sched_velidation = 1
-T_rnn, n_sym = hlp.calculate_effective_train_params(N_tv_cells, num_SIC_stages, T_rnn_raw, batch_size_raw)
-batch_size = n_sym//T_rnn
+
 # matrices to take the inputs 
-idx_mat_y_inputs, idx_mat_x_inputs = data_conv_tools.gen_idx_mat_inputs(n_sym, N_os, L_y, L_ic, num_SIC_stages, sim_stage)
+idx_mat_y_inputs, idx_mat_x_inputs = data_conv_tools.gen_idx_mat_inputs(n_sym_per_batch*batch_size, N_os, L_y, L_ic, num_SIC_stages, curr_stage)
+# reshape and use index of the SIC block acording to the paper: (s,t)
+idx_mat_y_inputs = idx_mat_y_inputs.reshape(batch_size, t_max, unknown_stages, -1).permute(0,2,1,3)
+idx_mat_x_inputs = idx_mat_x_inputs.reshape(batch_size, t_max, unknown_stages, -1).permute(0,2,1,3)
 
 folder_path = io_tool.create_folder(f"results2/{train_type_name}/{mod_format}{M:}",0)
 io_tool.init_summary_file(f"{folder_path}/results.txt")
