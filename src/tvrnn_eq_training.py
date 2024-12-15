@@ -31,14 +31,11 @@ def train_rnn():
     for i in range(max_num_epochs):
         idx_u, _, x, y = dd_system.simulate_transmission(1, n_sym, SNR_dB)
         x = hlp.norm_unit_var(x, x_mean, x_var)
-        y = hlp.norm_filt(y, y_mean, y_var)
+        y = hlp.norm_unit_var(y, y_mean, y_var)
         rnn_inputs = data_conv_tools.gen_rnn_inputs(x, y, idx_mat_x_inputs, idx_mat_y_inputs, complex_mod)
         u_hat_soft = rnn_eq(rnn_inputs.reshape(-1, T_rnn, input_size)).flatten(0,-2)
         
-        idx_u_sic = idx_u.flatten()
-        if sim_stage != 1:
-            idx_u_sic = idx_u_sic[sim_stage-1::num_SIC_stages]
-        
+        idx_u_sic = idx_u.flatten()[sim_stage-1::num_SIC_stages]
         loss = cross_entropy(input=u_hat_soft, target=idx_u_sic)
         loss.backward()
         optimizer.step()
@@ -91,7 +88,7 @@ eff_L_ic = L_ic*2 if complex_mod else L_ic
 input_size = L_y if sim_stage == 1 else L_y + eff_L_ic
 hidden_states_size = np.array([32,])
 output_size = M
-N_tv_cells = 1 if sim_stage == 1 else num_SIC_stages - sim_stage + 1
+N_tv_cells = num_SIC_stages - sim_stage + 1
 
 # NN Training parameters
 lr = 0.02
