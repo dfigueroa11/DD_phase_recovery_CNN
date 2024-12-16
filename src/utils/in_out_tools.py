@@ -290,7 +290,6 @@ def process_args(train_types):
         "-s",
         type=int,
         help=f"number of the current stage to simulate, 1 <= s <= S",
-        choices=train_types.keys(),
         default=1)
     return parser.parse_args()
  

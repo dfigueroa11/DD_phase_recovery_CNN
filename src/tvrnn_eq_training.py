@@ -75,24 +75,11 @@ def eval_n_save_rnn():
         u = u.reshape(batch_size, t_max, num_SIC_stages)[:,:,curr_stage-1].cpu().flatten()
         SERs += perf_met.get_all_SERs(u, u_hat, dd_system, SNR_dB)
         MI += np.log2(M) - ce*np.log2(np.exp(1))
-        MI2 += perf_met.get_MI_SD(idx_u_sic_curr_s.flatten().numpy(), softmax(u_hat_soft.permute(0,2,1).reshape(-1,M), dim=-1).numpy())
 
     MI = MI/num_frame_validation
-    MI2 = MI2/num_frame_validation
     SERs = SERs/num_frame_validation
-    print(f"ce method:{MI}, my method: {MI2}")
 
     io_tool.print_save_summary(f"{folder_path}/results_S={num_SIC_stages}_s={curr_stage}.txt", lr, L_link, alpha, SNR_dB, SERs, MI)
-
-
-
-
-
-
-
-
-
-
 
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -145,8 +132,8 @@ num_frame_sched_validation = 1
 ## matrices to take the inputs 
 idx_mat_y_inputs, idx_mat_x_inputs = data_conv_tools.gen_idx_mat_inputs(n_sym_per_batch*batch_size, N_os, L_y, L_ic, num_SIC_stages, curr_stage)
 # reshape and use index of the SIC block acording to the paper: (s,t)
-idx_mat_y_inputs = idx_mat_y_inputs.reshape(batch_size, t_max, unknown_stages, -1).permute(0,2,1,3)
-idx_mat_x_inputs = idx_mat_x_inputs.reshape(batch_size, t_max, unknown_stages, -1).permute(0,2,1,3)
+idx_mat_y_inputs = idx_mat_y_inputs.reshape(batch_size, t_max, unknown_stages, -1).permute(0,2,1,3).to(device)
+idx_mat_x_inputs = idx_mat_x_inputs.reshape(batch_size, t_max, unknown_stages, -1).permute(0,2,1,3).to(device)
 
 ## saving routine
 save_progress = True
