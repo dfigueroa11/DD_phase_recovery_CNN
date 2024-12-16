@@ -1,7 +1,8 @@
 import torch
 import torch.jit as jit
 from torch import nn
-from typing import List
+
+from utils.complexity_tools import calc_RNN_complexity
 
 TRAIN_CE = 0
 TRAIN_TYPES = {TRAIN_CE: "TRAIN_CE"}
@@ -37,6 +38,7 @@ class RNNRX(jit.ScriptModule):
     
         self.lin_layer_in = int(input_size)
         self.Lin_layer = nn.Linear(self.lin_layer_in, output_size)
+        self.comlexity = calc_RNN_complexity(self.TVRNN_layers, self.Lin_layer)
 
     # @jit.script_method
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -124,6 +126,3 @@ class CRNNCell(jit.ScriptModule):
     def forward(self, input: torch.Tensor, hx: torch.Tensor) -> torch.Tensor:
         hx = self.Lin_layer_input_to_hidden(input) + self.Lin_layer_hidden_to_hidden(hx)
         return torch.relu(hx)
-
-def reverse(lst: List[torch.Tensor]) -> List[torch.Tensor]:
-    return lst[::-1]

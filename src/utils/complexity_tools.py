@@ -232,3 +232,21 @@ def round_kernel_size(kernel_size: float):
 def calc_multi_layer_FCN_complexity(layers: nn.ModuleList, sym_out):
     assert all([isinstance(module, nn.Linear) or isinstance(module, nn.Bilinear) for module in layers]), "all layers must be instance of nn.Linear or  nn.Bilinear"
     return np.ceil(sum([l.weight.data.numel() for l in layers])/sym_out)
+
+################ RNN ####################
+def calc_RNN_complexity(TVRNN_layers, Lin_layer):
+    num_m = 0
+    for TVRNN_layer in TVRNN_layers:
+        num_m += calc_TVRNN_layer_complexity(TVRNN_layer)
+    num_m += Lin_layer.weight.data.numel()
+    return num_m
+
+def calc_TVRNN_layer_complexity(TVRNN_layer):
+    num_m = 0
+    for cell_fw, cell_bw in zip(TVRNN_layer.cells_fw, TVRNN_layer.cells_bw):
+        num_m += calc_RNN_Cell_complexity(cell_fw)
+        num_m += calc_RNN_Cell_complexity(cell_bw)
+    return num_m
+
+def calc_RNN_Cell_complexity(RNN_cell):
+    return RNN_cell.Lin_layer_input_to_hidden.weight.data.numel() + RNN_cell.Lin_layer_hidden_to_hidden.weight.data.numel()
