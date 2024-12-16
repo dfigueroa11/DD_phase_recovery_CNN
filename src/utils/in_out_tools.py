@@ -279,6 +279,19 @@ def process_args(train_types):
         help=f"int to select the loss function: {train_types}",
         choices=train_types.keys(),
         default=0)
+    parser.add_argument(
+        "--numSIC",
+        "-S",
+        type=int,
+        help=f"number of SIC stages",
+        default=1)
+    parser.add_argument(
+        "--currentStage",
+        "-s",
+        type=int,
+        help=f"number of the current stage to simulate, 1 <= s <= S",
+        choices=train_types.keys(),
+        default=1)
     return parser.parse_args()
  
 def make_file_name(lr: float, L_link: float, alpha: float, SNR_dB: float):

@@ -1,7 +1,7 @@
 import torch
 import torch.optim as optim
 from torch.nn import MSELoss, Softmax
-from torch.nn.functional import cross_entropy
+from torch.nn.functional import cross_entropy, softmax
 import numpy as np
 
 import comm_sys.DD_system as DD_system
@@ -56,11 +56,34 @@ def checkpoint_tasks(u_hat_soft, u, ce, progress):
     if save_progress:
         io_tool.save_progress(progress_file_path, batch_size, progress, curr_lr, ce, SERs, MI)
 
-
 def eval_n_save_rnn():
-    pass
-    # MI2 = perf_met.get_MI_SD(idx_u.flatten(), u_hat_soft.permute(0,2,1).reshape(-1,M))
-    # print(f"ce method:{MI}, my method: {MI2}")
+    rnn_eq.eval()
+    SERs = torch.zeros(3)
+    MI = 0
+    MI2 = 0
+    for i in range(num_frame_validation):
+        idx_u, u, x, y = dd_system.simulate_transmission(1, n_sym_per_batch*batch_size, SNR_dB)
+        x = hlp.norm_unit_var(x, x_mean, x_var)
+        y = hlp.norm_unit_var(y, y_mean, y_var)
+        rnn_inputs = data_conv_tools.gen_rnn_inputs(x, y, idx_mat_x_inputs, idx_mat_y_inputs, complex_mod)
+        u_hat_soft = rnn_eq(rnn_inputs).permute(0,2,1).detach().cpu()
+        
+        idx_u_sic_curr_s = idx_u.reshape(batch_size, t_max, num_SIC_stages)[:,:,curr_stage-1].cpu()
+        ce = cross_entropy(input=u_hat_soft, target=idx_u_sic_curr_s)
+
+        u_hat = data_conv_tools.APPs_2_u(u_hat_soft, dd_system, SNR_dB).flatten()
+        u = u.reshape(batch_size, t_max, num_SIC_stages)[:,:,curr_stage-1].cpu().flatten()
+        SERs += perf_met.get_all_SERs(u, u_hat, dd_system, SNR_dB)
+        MI += np.log2(M) - ce*np.log2(np.exp(1))
+        MI2 += perf_met.get_MI_SD(idx_u_sic_curr_s.flatten().numpy(), softmax(u_hat_soft.permute(0,2,1).reshape(-1,M), dim=-1).numpy())
+
+    MI = MI/num_frame_validation
+    MI2 = MI2/num_frame_validation
+    SERs = SERs/num_frame_validation
+    print(f"ce method:{MI}, my method: {MI2}")
+
+    io_tool.print_save_summary(f"{folder_path}/results_S={num_SIC_stages}_s={curr_stage}.txt", lr, L_link, alpha, SNR_dB, SERs, MI)
+
 
 
 
@@ -96,8 +119,8 @@ train_type = list(rnn.TRAIN_TYPES.keys())[args.loss_func]
 train_type_name = rnn.TRAIN_TYPES[train_type]
 
 ### SIC definition 
-num_SIC_stages = 5
-curr_stage = 3
+num_SIC_stages = args.numSIC
+curr_stage = args.currentStage
 known_stages = curr_stage-1
 unknown_stages = num_SIC_stages - known_stages
 ### TVRNN definition
@@ -117,7 +140,7 @@ t_max = n_unknown_sym//unknown_stages
 max_num_epochs = 30_000
 num_frame_validation = 100
 num_epochs_before_sched = 100
-num_frame_sched_velidation = 1
+num_frame_sched_validation = 1
 
 ## matrices to take the inputs 
 idx_mat_y_inputs, idx_mat_x_inputs = data_conv_tools.gen_idx_mat_inputs(n_sym_per_batch*batch_size, N_os, L_y, L_ic, num_SIC_stages, curr_stage)
@@ -129,12 +152,11 @@ idx_mat_x_inputs = idx_mat_x_inputs.reshape(batch_size, t_max, unknown_stages, -
 save_progress = True
 
 folder_path = io_tool.create_folder(f"results2/{train_type_name}/{mod_format}{M:}",0)
-io_tool.init_summary_file(f"{folder_path}/results.txt")
-
-
+io_tool.init_summary_file(f"{folder_path}/results_S={num_SIC_stages}_s={curr_stage}.txt")
 
 for L_link in L_link_steps:
     for SNR_dB in SNR_dB_steps:
+        print(f'training model with L_link={L_link*1e-3:.0f}km, SNR={SNR_dB} dB, for {mod_format}-{M}, stage: {curr_stage}/{num_SIC_stages}')
         dd_system = initialize_dd_system()
         _, _, _, y = dd_system.simulate_transmission(1, int(100e3), SNR_dB)
         y_mean, y_var, x_mean, x_var = hlp.find_normalization_constants(y, dd_system.constellation, SNR_dB)
@@ -144,5 +166,4 @@ for L_link in L_link_steps:
             io_tool.init_progress_file(progress_file_path)
         train_rnn()
         eval_n_save_rnn()
-        break
-    break
+io_tool.write_complexity_in_summary_file(f"{folder_path}/results_S={num_SIC_stages}_s={curr_stage}.txt", rnn_eq.complexity)
