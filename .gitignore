@@ -10,6 +10,8 @@ __pycache__/
 
 # replace script 
 /src/results[0-9]/
+results[0-9]/
+
 # C extensions
 *.so
 
