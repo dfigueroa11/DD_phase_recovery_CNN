@@ -1,3 +1,4 @@
+from math import ceil 
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -252,3 +253,20 @@ def common_diff_encoder(mod: str, constellation: torch.Tensor, device):
     else:
         raise ValueError("mod should be PAM, ASK, SQAM, QAM or DDQAM")
     return Differential_encoder.Differential_encoder(constellation, diff_mapping, device)
+
+def find_normalization_constants(y: torch.Tensor, constellation: torch.Tensor, SNR_dB: float):
+    y_mean = y.mean()
+    y_var = y.var()
+    SNR_lin = torch.tensor([10**(SNR_dB/10)], device=constellation.device)
+    x_mean = torch.mean(SNR_lin * constellation)
+    x_var = torch.var(SNR_lin * constellation)
+    return y_mean, y_var, x_mean, x_var
+
+def norm_unit_var(x: torch.Tensor, mean: torch.Tensor, var: torch.Tensor):
+    return (x - mean) / torch.sqrt(var)
+
+def calculate_effective_train_params(num_unknown_stages, num_SIC_stages, n_unknown_sym_per_batch_raw):
+    n_unknown_sym_per_batch = ceil(n_unknown_sym_per_batch_raw /num_unknown_stages) * num_unknown_stages
+    n_sym_per_batch = n_unknown_sym_per_batch * num_SIC_stages/num_unknown_stages
+    n_sym_per_batch = ceil(n_sym_per_batch/num_SIC_stages) * num_SIC_stages
+    return n_unknown_sym_per_batch, n_sym_per_batch

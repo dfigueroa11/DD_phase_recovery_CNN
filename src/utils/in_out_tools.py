@@ -57,7 +57,7 @@ def print_progress(batch_size: int, progress: float, lr: float, loss: float, SER
     SERs:           [mag ER, phase, ER, SER]
     MI:             Mutual information float
     '''
-    print(f"   Batch size:{batch_size/1000:>3.0f}k  prog:{progress:>6.1%}  lr:{lr[0]:>8.2e}  loss:{loss:>9.3e}  "+
+    print(f"   Batch size:{batch_size:>4.0f}  prog:{progress:>6.1%}  lr:{lr[0]:>8.2e}  loss:{loss:>9.3e}  "+
           f"mag ER:{SERs[0]:>8.2e}  ph ER:{SERs[1]:>8.2e}  SER:{SERs[2]:>8.2e}  MI:{MI:>4.2f}", end='\r')
 
 def init_summary_file(path: str):
@@ -279,6 +279,18 @@ def process_args(train_types):
         help=f"int to select the loss function: {train_types}",
         choices=train_types.keys(),
         default=0)
+    parser.add_argument(
+        "--numSIC",
+        "-S",
+        type=int,
+        help=f"number of SIC stages",
+        default=1)
+    parser.add_argument(
+        "--currentStage",
+        "-s",
+        type=int,
+        help=f"number of the current stage to simulate, 1 <= s <= S",
+        default=1)
     return parser.parse_args()
  
 def make_file_name(lr: float, L_link: float, alpha: float, SNR_dB: float):
