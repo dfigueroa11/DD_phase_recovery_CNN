@@ -60,7 +60,6 @@ def eval_n_save_rnn():
     rnn_eq.eval()
     SERs = torch.zeros(3)
     MI = 0
-    MI2 = 0
     for i in range(num_frame_validation):
         idx_u, u, x, y = dd_system.simulate_transmission(1, n_sym_per_batch*batch_size, SNR_dB)
         x = hlp.norm_unit_var(x, x_mean, x_var)
