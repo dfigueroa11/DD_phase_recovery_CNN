@@ -38,7 +38,7 @@ class RNNRX(jit.ScriptModule):
     
         self.lin_layer_in = int(input_size)
         self.Lin_layer = nn.Linear(self.lin_layer_in, output_size)
-        self.comlexity = calc_RNN_complexity(self.TVRNN_layers, self.Lin_layer)
+        self.complexity = calc_RNN_complexity(self.TVRNN_layers, self.Lin_layer)
 
     # @jit.script_method
     def forward(self, x: torch.Tensor) -> torch.Tensor:
