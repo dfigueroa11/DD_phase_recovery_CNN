@@ -256,10 +256,10 @@ def common_diff_encoder(mod: str, constellation: torch.Tensor, device):
 
 def find_normalization_constants(y: torch.Tensor, constellation: torch.Tensor, SNR_dB: float):
     y_mean = y.mean()
-    y_var = y.var()
+    y_var = y.var(correction=0)
     SNR_lin = torch.tensor([10**(SNR_dB/10)], device=constellation.device)
-    x_mean = torch.mean(SNR_lin * constellation)
-    x_var = torch.var(SNR_lin * constellation)
+    x_mean = torch.mean(torch.sqrt(SNR_lin) * constellation)
+    x_var = torch.var(torch.sqrt(SNR_lin) * constellation, correction=0)
     return y_mean, y_var, x_mean, x_var
 
 def norm_unit_var(x: torch.Tensor, mean: torch.Tensor, var: torch.Tensor):
