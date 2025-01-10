@@ -47,7 +47,7 @@ def get_alphabets(dd_system: DD_system, Ptx_dB: float):
     phase_alphabet = torch.unique(torch.round(torch.angle(constellation/torch.abs(constellation)), decimals=4))
     return mag_alphabet, phase_alphabet, constellation
 
-def get_all_SERs(u: torch.Tensor, u_hat: torch.Tensor, dd_system: DD_system, Ptx_dB: float):
+def get_all_SERs(u: torch.Tensor, u_hat: torch.Tensor, dd_system: DD_system, Ptx_dB: float=0):
     ''' returns the magnitude error rate, phase error rate and SER
     
     Arguments:
@@ -80,7 +80,7 @@ def get_MI_HD(u: torch.Tensor, u_hat: torch.Tensor, dd_system: DD_system, Ptx_dB
     u_hat_idx, _ = min_distance_dec(u_hat.flatten(), constellation)
     return mutual_info_score(u_hat_idx, u_idx)/np.log(2)
 
-def get_MI_SD(u:np.ndarray, APPs:np.ndarray, dd_system: DD_system, Ptx_dB: float):
+def get_MI_SD(u:np.ndarray, APPs:np.ndarray, dd_system: DD_system, Ptx_dB: float=0):
     ''' Calculates the mutual information between u_idx and APPs
 
     Arguments:
