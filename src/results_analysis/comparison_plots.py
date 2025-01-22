@@ -55,7 +55,7 @@ cc = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2
 #########################################################################
 # plot comparing normalization vs no normalization in the tvrnn and cnn #
 #########################################################################
-save_fig = False
+save_fig = True
 l_link_list = [0, 6, 12, 18, 24, 30]
 mod_formats = ["ASK2", "PAM2", "ASK4", "PAM4", "QAM4"]
 orders = [2,2,4,4,4]
@@ -108,3 +108,91 @@ for mod_format, order in zip(mod_formats, orders):
 if save_fig:
     pdf.close()
 #########################################################################
+
+
+#########################################################################
+#                   plot the learning process for tvrnn                 #
+#########################################################################
+
+# SIC_stages = 4
+# x_column = ["progress"]*SIC_stages
+# y_column_1 = [["lr"]]*SIC_stages
+# y_column_2 = [["MI"]]*SIC_stages
+# labels = [f"stage {s}" for s in range(1,SIC_stages+1)]
+
+# mod_formats = ["ASK2", "PAM2", "ASK4", "PAM4", "QAM4"]
+# l_link_list = [0, 6, 12, 18, 24, 30]
+# SNR_dB_list = SNR_dB_steps = [x for x in range(-5, 12, 2)]
+
+# pdf = PdfPages(f"tvrnn_no_norm_progress.pdf")
+# for mod_format in mod_formats:
+#     for l_link in l_link_list:
+#         for SNR_dB in SNR_dB_list:
+#             # path = [f"/Users/diegofigueroa/Desktop/results2_norm/TRAIN_CE/{mod_format}_{s}/progress_S=4_s={s}_lr0p02_Llink{l_link}km_alpha0p0_{SNR_dB}dB.txt" for s in range(1,SIC_stages+1)]
+#             # path = [f"/Users/diegofigueroa/Desktop/results2_no_norm/TRAIN_CE/{mod_format}_{s}/progress_S=4_s={s}_lr0p02_Llink{l_link}km_alpha0p0_{SNR_dB}dB.txt" for s in range(1,SIC_stages+1)]
+#             axs: list[Axes]
+#             fig, axs = plt.subplots(2,1, figsize=(15,9))
+#             fig.suptitle(f"{mod_format} -- Link length: {l_link} km -- SNR: {SNR_dB} dB", fontsize=16)
+#             plot_data(axs[0],path,x_column,y_column_1,labels)
+#             plot_data(axs[1],path,x_column,y_column_2,labels)
+#             axs[0].grid()
+#             axs[0].set_xlim(0,1)
+#             axs[0].set_ylabel("learning rate")
+#             axs[0].set_yscale('log')
+
+#             axs[1].grid()
+#             axs[1].set_xlim(0,1)
+#             axs[1].set_ylabel("rate [bpcu]")
+#             axs[1].set_xlabel("progress")
+
+#             handles, labels = axs[0].get_legend_handles_labels()
+#             fig.legend(handles, labels, loc='lower center', ncol=4, fontsize='large')
+#             fig.tight_layout(rect=[0.05, 0.05, 0.95, 1])
+#             pdf.savefig()
+#             plt.close()
+# pdf.close()
+#########################################################################
+
+
+
+
+#########################################################################
+#                   plot the learning process for cnn                   #
+#########################################################################
+
+# x_column = []*2
+# y_column_1 = [["lr"]]*2
+# y_column_2 = [["MI"]]*2
+# labels = ["CNN norm","CNN no norm"]
+
+# mod_formats = ["ASK2", "PAM2", "ASK4", "PAM4", "QAM4"]
+# l_link_list = [0, 6, 12, 18, 24, 30]
+# SNR_dB_list = SNR_dB_steps = [x for x in range(-5, 12, 2)]
+
+# pdf = PdfPages(f"cnn_progress.pdf")
+# for mod_format in mod_formats:
+#     for l_link in l_link_list:
+#         for SNR_dB in SNR_dB_list:
+#             axs: list[Axes]
+#             paths = [f"/Users/diegofigueroa/Desktop/results_norm/TRAIN_CE_U_SYMBOLS/{mod_format}_0/progress_lr0p004_Llink{l_link}km_alpha0p0_{SNR_dB}dB.txt",
+#                      f"/Users/diegofigueroa/Desktop/results_no_norm/TRAIN_CE_U_SYMBOLS/{mod_format}_0/progress_lr0p004_Llink{l_link}km_alpha0p0_{SNR_dB}dB.txt"]
+#             fig, axs = plt.subplots(2,1, figsize=(15,9))
+#             fig.suptitle(f"{mod_format} -- Link length: {l_link} km -- SNR: {SNR_dB} dB", fontsize=16)
+#             plot_data(axs[0],paths,x_column,y_column_1,labels)
+#             plot_data(axs[1],paths,x_column,y_column_2,labels)
+#             axs[0].grid()
+#             axs[0].set_xlim(0,299)
+#             axs[0].set_ylabel("learning rate")
+#             axs[0].set_yscale('log')
+
+#             axs[1].grid()
+#             axs[1].set_xlim(0,299)
+#             axs[1].set_ylabel("rate [bpcu]")
+#             axs[1].set_xlabel("progress")
+
+#             handles, labels = axs[0].get_legend_handles_labels()
+#             fig.legend(handles, labels, loc='lower center', ncol=4, fontsize='large')
+#             fig.tight_layout(rect=[0.05, 0.05, 0.95, 1])
+#             pdf.savefig()
+#             plt.close()
+# pdf.close()
