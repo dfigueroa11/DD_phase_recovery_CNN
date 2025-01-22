@@ -39,6 +39,7 @@ def select_columns_data(headers: list[str], data: np.ndarray, column_selection: 
 
 def select_data(headers: list[list[str]], data: list[np.ndarray], x_data_selection: list[str], y_data_selection: list[list[str]], slice_selection: list[list[str]]):
     ''' From each array in data selects the x, y and slice columns acording the the headers and x_data_selection, y_data_selection, slice_selection
+        (for x_data_selection empty list no x_data is also empty)
 
     Returns:
     x_data, y_data, slice_data:     three list of nd.array for x, y and slice data, if slice selection is None slice_data is equal to y_data
@@ -47,6 +48,11 @@ def select_data(headers: list[list[str]], data: list[np.ndarray], x_data_selecti
     y_data = []
     slice_data = []
     if slice_selection is None: slice_selection = y_data_selection
+    if x_data_selection == []:
+        for h, d, y, s in zip(headers, data, y_data_selection, slice_selection):
+            y_data.append(select_columns_data(h, d, y))
+            slice_data.append(select_columns_data(h, d, s))
+        return x_data, y_data, slice_data
     for h, d, x, y, s in zip(headers, data, x_data_selection, y_data_selection, slice_selection):
         x_data.append(select_columns_data(h, d, [x,]))
         y_data.append(select_columns_data(h, d, y))
@@ -55,12 +61,17 @@ def select_data(headers: list[list[str]], data: list[np.ndarray], x_data_selecti
 
 def take_x_y_slice(x_data: list[np.ndarray], y_data: list[np.ndarray], slice_data: list[np.ndarray], slice_values: list[list[float]]):
     ''' Take a slice of the data based on specified slice conditions, where slice_data should match slice_values (e.g., take data where s1 = c1, s2 = c2, etc.)
-    
+        (for x_data_selection empty list no x_data is also empty)
+
     Retutns:
     x_data_out, y_data_out:     two list of nd.array for x and y where the slice conditions are met
     '''
     x_data_out = []
     y_data_out = []
+    if x_data == []:
+        for y, s, s_val in zip(y_data, slice_data, slice_values):
+            y_data_out.append(y[np.all(s == s_val,-1)])
+        return x_data_out, y_data_out
     for x, y, s, s_val in zip(x_data, y_data, slice_data, slice_values):
         x_data_out.append(x[np.all(s == s_val,-1)])
         y_data_out.append(y[np.all(s == s_val,-1)])
@@ -74,7 +85,7 @@ def plot_data(ax: Axes, file_paths: list[str], x_data_selection: list[str], y_da
     Arguments:
     ax:                 Axes object to do the plots
     file_paths:         a list containing all the file paths to use
-    x_data_selection:   A list specifying the column containing the x-axis data for each corresponding file. The column identifiers should match the headers provided in each file
+    x_data_selection:   A list specifying the column containing the x-axis data for each corresponding file. The column identifiers should match the headers provided in each file (for empty list no x data is used)
     y_data_selection:   A list of lists, where each inner list specifies the column(s) containing the y-axis data for each corresponding file. The column identifiers should match the headers provided in each file
     labels:             A list of lists, where each inner list specifies the label(s) for the corresponding graph(s) of each file
     slice_selection:    A list of lists, where each inner list specifies the column(s) containing the data to do the slice for each corresponding file. The column identifiers should match the headers provided in each file
@@ -84,5 +95,9 @@ def plot_data(ax: Axes, file_paths: list[str], x_data_selection: list[str], y_da
     x_data, y_data, slice_data = select_data(headers, data, x_data_selection, y_data_selection, slice_selection)
     if slice_values is not None:
         x_data, y_data = take_x_y_slice(x_data, y_data, slice_data, slice_values)
+    if x_data == []:
+        for y, lbl in zip(y_data, labels):
+            ax.plot(y, label=lbl)
+        return
     for x, y, lbl in zip(x_data, y_data, labels):
         ax.plot(x, y, label=lbl)
