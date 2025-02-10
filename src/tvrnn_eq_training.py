@@ -20,7 +20,7 @@ def initialize_dd_system():
                                 L_link=L_link, R_sym=R_sym, beta2=beta2)
 
 def initialize_RNN_optimizer(lr):
-    rnn_eq = rnn.RNNRX(input_size, hidden_states_size, output_size, unknown_stages, device)
+    rnn_eq = rnn.RNNRX(input_size, hidden_states_size, output_size, unknown_stages, device, Bi_dir)
     rnn_eq.to(device)
     optimizer = optim.Adam(rnn_eq.parameters(), eps=1e-07, lr=lr)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', factor=0.3)
@@ -78,7 +78,7 @@ def eval_n_save_rnn():
     MI = MI/num_frame_validation
     SERs = SERs/num_frame_validation
 
-    io_tool.print_save_summary(f"{folder_path}/results_S={num_SIC_stages}_s={curr_stage}_L_y={L_y}_hs={hidden_states_size}.txt", lr, L_link, alpha, SNR_dB, SERs, MI)
+    io_tool.print_save_summary(f"{folder_path}/results_S={num_SIC_stages}_s={curr_stage}_L_y={L_y}_hs={hidden_states_size}_Bi_dir={Bi_dir}.txt", lr, L_link, alpha, SNR_dB, SERs, MI)
 
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -110,6 +110,7 @@ curr_stage = args.currentStage
 known_stages = curr_stage-1
 unknown_stages = num_SIC_stages - known_stages
 ### TVRNN definition
+Bi_dir = True
 L_y_list = [10, 20, 30]
 L_ic = 16
 eff_L_ic = L_ic*2 if complex_mod else L_ic
@@ -142,7 +143,7 @@ for input_size, L_y in zip(input_size_list, L_y_list):
         ## saving routine
         save_progress = True
 
-        io_tool.init_summary_file(f"{folder_path}/results_S={num_SIC_stages}_s={curr_stage}_L_y={L_y}_hs={hidden_states_size}.txt")
+        io_tool.init_summary_file(f"{folder_path}/results_S={num_SIC_stages}_s={curr_stage}_L_y={L_y}_hs={hidden_states_size}_Bi_dir={Bi_dir}.txt")
         for L_link in L_link_steps:
             for SNR_dB in SNR_dB_steps:
                 print(f'training model with L_link={L_link*1e-3:.0f}km, SNR={SNR_dB} dB, for {mod_format}-{M} L_y={L_y}, hs={hidden_states_size}')
@@ -151,8 +152,8 @@ for input_size, L_y in zip(input_size_list, L_y_list):
                 y_mean, y_var, x_mean, x_var = hlp.find_normalization_constants(y, dd_system.constellation, SNR_dB)
                 rnn_eq, optimizer, scheduler = initialize_RNN_optimizer(lr)
                 if save_progress:
-                    progress_file_path = f"{folder_path}/progress_S={num_SIC_stages}_s={curr_stage}_L_y={L_y}_hs={hidden_states_size}_{io_tool.make_file_name(lr, L_link, alpha, SNR_dB)}.txt"
+                    progress_file_path = f"{folder_path}/progress_S={num_SIC_stages}_s={curr_stage}_L_y={L_y}_hs={hidden_states_size}_Bi_dir={Bi_dir}_{io_tool.make_file_name(lr, L_link, alpha, SNR_dB)}.txt"
                     io_tool.init_progress_file(progress_file_path)
                 train_rnn()
                 eval_n_save_rnn()
-        io_tool.write_complexity_in_summary_file(f"{folder_path}/results_S={num_SIC_stages}_s={curr_stage}_L_y={L_y}_hs={hidden_states_size}.txt", rnn_eq.complexity)
+        io_tool.write_complexity_in_summary_file(f"{folder_path}/results_S={num_SIC_stages}_s={curr_stage}_L_y={L_y}_hs={hidden_states_size}_Bi_dir={Bi_dir}.txt", rnn_eq.complexity)

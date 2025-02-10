@@ -25,14 +25,16 @@ class RNNRX(jit.ScriptModule):
         output_size,
         N_tv_cells: int,
         dev,
+        Bi_dir=True
     ):
         super().__init__()
         self.dev = dev  # Save device
-        self.mult_BIRNN = 2
+        self.Bi_dir = Bi_dir
+        self.mult_BIRNN = 2 if self.Bi_dir else 1
         self.N_tv_cells = N_tv_cells
         self.TVRNN_layers = nn.ModuleList()  # Variable layer list
         for hidden_sz in hidden_states_size:
-            self.TVRNN_layers.append(TVRNN(input_size, hidden_sz, self.N_tv_cells, dev))
+            self.TVRNN_layers.append(TVRNN(input_size, hidden_sz, self.N_tv_cells, dev, self.Bi_dir))
             # Mult x 2 for next input dimension, because bidirectional RNN concatenates two previous output vectors
             input_size = hidden_sz * self.mult_BIRNN
     
@@ -56,16 +58,18 @@ class TVRNN(jit.ScriptModule):
         hidden_size: int,
         N_tv_cells: int,
         dev: str,
+        Bi_dir=True
     ):
         super().__init__()
         self.dev = dev
-
+        self.Bi_dir = Bi_dir
         self.input_size = int(input_size)
         self.hidden_size = int(hidden_size)
         self.N_tv_cells = N_tv_cells
 
         self.cells_fw = nn.ModuleList([CRNNCell(self.input_size, self.hidden_size, self.dev) for count in range(self.N_tv_cells)])
-        self.cells_bw = nn.ModuleList([CRNNCell(self.input_size, self.hidden_size, self.dev) for count in range(self.N_tv_cells)])
+        if self.Bi_dir:
+            self.cells_bw = nn.ModuleList([CRNNCell(self.input_size, self.hidden_size, self.dev) for count in range(self.N_tv_cells)])
             
     # @jit.script_method
     def recurFW(self, x: torch.Tensor) -> torch.Tensor:
@@ -77,7 +81,7 @@ class TVRNN(jit.ScriptModule):
         out_size = (x.size(0), x.size(1), x.size(2), self.hidden_size)
         outputs = torch.empty(out_size, dtype=x.dtype, layout=x.layout, device=x.device)
         for t in range(x.size(dim=2)):
-            for s, tvrnn_cell in enumerate(self.cells_bw):
+            for s, tvrnn_cell in enumerate(self.cells_fw):
                 h = tvrnn_cell(x[:,s,t], h)
                 outputs[:,s,t] = h
         return outputs
@@ -103,14 +107,14 @@ class TVRNN(jit.ScriptModule):
 
         ## --- Forward path
         future_f = torch.jit.fork(self.recurFW, x)
-
         ## --- Backward path
-        out_bw = self.recurBW(x)
+        if self.Bi_dir: out_bw = self.recurBW(x)
 
         out_fw = torch.jit.wait(future_f)  # Wait for FW path to finish
 
+        out = torch.cat((out_fw, out_bw), dim=-1) if self.Bi_dir else out_fw
         ## -- Return concatenated
-        return torch.cat((out_fw, out_bw), dim=-1)
+        return out
 
 # * ----------------------- Custom RNN Cell ---------------------
 # References for JIT; Code inspired by:

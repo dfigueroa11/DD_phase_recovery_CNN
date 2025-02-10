@@ -243,10 +243,14 @@ def calc_RNN_complexity(TVRNN_layers, Lin_layer):
 
 def calc_TVRNN_layer_complexity(TVRNN_layer):
     num_m = 0
-    for cell_fw, cell_bw in zip(TVRNN_layer.cells_fw, TVRNN_layer.cells_bw):
+    for cell_fw in TVRNN_layer.cells_fw:
         num_m += calc_RNN_Cell_complexity(cell_fw)
+    if not TVRNN_layer.Bi_dir:
+        return num_m
+    for cell_bw in TVRNN_layer.cells_bw:
         num_m += calc_RNN_Cell_complexity(cell_bw)
     return num_m
+   
 
 def calc_RNN_Cell_complexity(RNN_cell):
     return RNN_cell.Lin_layer_input_to_hidden.weight.data.numel() + RNN_cell.Lin_layer_hidden_to_hidden.weight.data.numel()
